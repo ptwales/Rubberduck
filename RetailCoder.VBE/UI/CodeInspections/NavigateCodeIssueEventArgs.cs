@@ -1,18 +1,18 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using Rubberduck.VBA.Parser;
+using Rubberduck.VBA;
 
 namespace Rubberduck.UI.CodeInspections
 {
     [ComVisible(false)]
     public class NavigateCodeIssueEventArgs : EventArgs
     {
-        public NavigateCodeIssueEventArgs(Instruction instruction)
+        public NavigateCodeIssueEventArgs(SyntaxTreeNode node)
         {
-            _instruction = instruction;
+            _node = node;
         }
 
-        private readonly Instruction _instruction;
-        public Instruction Instruction { get { return _instruction; } }
+        private readonly SyntaxTreeNode _node;
+        public SyntaxTreeNode Node { get { return _node; } }
     }
 }

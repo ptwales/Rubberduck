@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Rubberduck.VBA.Parser;
-using Rubberduck.VBA.Parser.Grammar;
+using Rubberduck.VBA;
+using Rubberduck.VBA.Grammar;
 
 namespace Rubberduck.Inspections
 {
@@ -14,7 +14,7 @@ namespace Rubberduck.Inspections
             Severity = CodeInspectionSeverity.Warning;
         }
 
-        public string Name { get { return "Option Explicit is not specified"; } }
+        public string Name { get { return InspectionNames.OptionExplicit; } }
         public CodeInspectionType InspectionType { get { return CodeInspectionType.CodeQualityIssues; } }
         public CodeInspectionSeverity Severity { get; set; }
 
@@ -25,7 +25,7 @@ namespace Rubberduck.Inspections
                 var options = module.ChildNodes.OfType<OptionNode>().ToList();
                 if (!options.Any() || options.All(option => option.Option != ReservedKeywords.Explicit))
                 {
-                    yield return new OptionExplicitInspectionResult(Name, module.Instruction, Severity);
+                    yield return new OptionExplicitInspectionResult(Name, module, Severity);
                 }
             }
         }

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Rubberduck.VBA.Parser;
-using Rubberduck.VBA.Parser.Grammar;
+using Rubberduck.VBA;
+using Rubberduck.VBA.Grammar;
 
 namespace Rubberduck.Inspections
 {
@@ -17,14 +17,15 @@ namespace Rubberduck.Inspections
             Severity = CodeInspectionSeverity.Suggestion;
         }
 
-        public string Name { get { return "Use of obsolete Rem comment syntax"; } }
+        public string Name { get { return InspectionNames.ObsoleteComment; } }
         public CodeInspectionType InspectionType { get {return CodeInspectionType.MaintainabilityAndReadabilityIssues; } }
         public CodeInspectionSeverity Severity { get; set; }
 
         public IEnumerable<CodeInspectionResultBase> GetInspectionResults(SyntaxTreeNode node)
         {
             var comments = node.FindAllComments();
-            var remComments = comments.Where(instruction => instruction.Comment.StartsWith(ReservedKeywords.Rem));
+            var remComments = comments.Where(instruction => instruction.Comment.StartsWith(ReservedKeywords.Rem))
+                                      .Select(instruction => new CommentNode(instruction, node.Scope));
             return remComments.Select(instruction => new ObsoleteCommentSyntaxInspectionResult(Name, instruction, Severity));
         }
     }

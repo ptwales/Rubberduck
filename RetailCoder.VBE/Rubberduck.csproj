@@ -22,6 +22,7 @@
     <WarningLevel>4</WarningLevel>
     <RegisterForComInterop>true</RegisterForComInterop>
     <DocumentationFile>bin\Debug\Rubberduck.XML</DocumentationFile>
+    <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -48,6 +49,11 @@
     <Reference Include="extensibility, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
+    <Reference Include="Microsoft.Office.Interop.Access, Version=14.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\..\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Access\14.0.0.0__71e9bce111e9429c\Microsoft.Office.Interop.Access.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -60,11 +66,24 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config\IConfigurationService.cs" />
+    <Compile Include="UI\Settings\ITodoSettingsView.cs" />
+    <Compile Include="VBEHost\AccessApp.cs" />
+    <Compile Include="Config\ConfigurationLoader.cs" />
+    <Compile Include="Config\UserSettings.cs" />
     <Compile Include="Config\CodeInspectionSettings.cs" />
+    <Compile Include="VBEHost\ExcelApp.cs" />
     <Compile Include="Extensions\CodeModuleSelection.cs" />
+    <Compile Include="VBEHost\OutlookApp.cs" />
     <Compile Include="Extensions\Selection.cs" />
     <Compile Include="Extensions\VbeExtensions.cs" />
-    <Compile Include="IHostApplication.cs" />
+    <Compile Include="VBEHost\HostApplicationBase.cs" />
+    <Compile Include="VBEHost\IHostApplication.cs" />
+    <Compile Include="Inspections\InspectionNames.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>InspectionNames.resx</DependentUpon>
+    </Compile>
     <Compile Include="Inspections\CodeInspectionResultBase.cs" />
     <Compile Include="Inspections\CodeInspectionSeverity.cs" />
     <Compile Include="Inspections\CodeInspectionType.cs" />
@@ -73,12 +92,16 @@
     <Compile Include="Inspections\ImplicitByRefParameterInspectionResult.cs" />
     <Compile Include="Inspections\ImplicitVariantReturnTypeInspection.cs" />
     <Compile Include="Inspections\ImplicitVariantReturnTypeInspectionResult.cs" />
+    <Compile Include="Inspections\MultipleDeclarationsInspection.cs" />
+    <Compile Include="Inspections\MultipleDeclarationsInspectionResult.cs" />
     <Compile Include="Inspections\ObsoleteCommentSyntaxInspection.cs" />
     <Compile Include="Inspections\ObsoleteCommentSyntaxInspectionResult.cs" />
     <Compile Include="Inspections\OptionExplicitInspection.cs" />
     <Compile Include="Inspections\OptionExplicitInspectionResult.cs" />
     <Compile Include="Inspections\VariableTypeNotDeclaredInspection.cs" />
     <Compile Include="Inspections\VariableTypeNotDeclaredInspectionResult.cs" />
+    <Compile Include="VBEHost\PowerPointApp.cs" />
+    <Compile Include="VBEHost\PublisherApp.cs" />
     <Compile Include="Refactoring\MenuIcons.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -132,6 +155,12 @@
     <Compile Include="Extensions\CodePaneExtensions.cs" />
     <Compile Include="Reflection\Member.cs" />
     <Compile Include="UI\NativeWindowMethods.cs" />
+    <Compile Include="UI\Settings\CodeInspectionControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\Settings\CodeInspectionControl.Designer.cs">
+      <DependentUpon>CodeInspectionControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\Settings\ConfigurationTreeView.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -144,13 +173,13 @@
     <Compile Include="UI\Settings\SettingsDialog.Designer.cs">
       <DependentUpon>SettingsDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="UI\Settings\TodoListSettingsControl.cs">
+    <Compile Include="UI\Settings\TodoListSettingsUserControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="UI\Settings\TodoListSettingsControl.Designer.cs">
-      <DependentUpon>TodoListSettingsControl.cs</DependentUpon>
+    <Compile Include="UI\Settings\TodoListSettingsUserControl.Designer.cs">
+      <DependentUpon>TodoListSettingsUserControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="UI\Settings\TodoSettingModel.cs" />
+    <Compile Include="UI\Settings\TodoSettingPresenter.cs" />
     <Compile Include="UI\ToDoItems\ToDoExplorerDockablePresenter.cs" />
     <Compile Include="UI\ToDoItems\ToDoItemClickEventArgs.cs" />
     <Compile Include="UI\WindowExtensions.cs" />
@@ -158,65 +187,67 @@
     <Compile Include="UnitTesting\NewTestMethodCommand.cs" />
     <Compile Include="UnitTesting\TestOutcome.cs" />
     <Compile Include="UnitTesting\TestResult.cs" />
-    <Compile Include="VBA\Parser\AssignmentNode.cs" />
-    <Compile Include="VBA\Parser\ModuleNode.cs" />
-    <Compile Include="Reflection\Project.cs" />
+    <Compile Include="VBA\AssignmentNode.cs" />
+    <Compile Include="VBA\CommentNode.cs" />
+    <Compile Include="VBA\Grammar\AssignmentSyntax.cs" />
+    <Compile Include="VBA\ModuleNode.cs" />
+    <Compile Include="Reflection\VbProjectExtensions.cs" />
     <Compile Include="Reflection\ProjectComponent.cs" />
     <Compile Include="UI\SubClassingWindowEventArgs.cs" />
     <Compile Include="UI\UnitTesting\SelectedTestEventArgs.cs" />
     <Compile Include="UI\UnitTesting\TestExplorerItem.cs" />
     <Compile Include="UI\UnitTesting\TestResultExtensions.cs" />
-    <Compile Include="VBA\Parser\CodeBlockNode.cs" />
-    <Compile Include="VBA\Parser\ConstDeclarationNode.cs" />
-    <Compile Include="VBA\Parser\DoLoopNode.cs" />
-    <Compile Include="VBA\Parser\EnumMemberNode.cs" />
-    <Compile Include="VBA\Parser\EnumNode.cs" />
-    <Compile Include="VBA\Parser\Expression.cs" />
-    <Compile Include="VBA\Parser\ExpressionNode.cs" />
-    <Compile Include="VBA\Parser\ForEachLoopNode.cs" />
-    <Compile Include="VBA\Parser\ForLoopNode.cs" />
-    <Compile Include="VBA\Parser\Grammar\DeclarationSyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\DoLoopSyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\EnumMemberSyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\EnumSyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\ForEachLoopSyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\ForLoopSyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\IfBlockSyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\LabelSyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\OptionSyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\ProcedureSyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\SyntaxType.cs" />
-    <Compile Include="VBA\Parser\Grammar\TypeConversionSyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\UserDefinedTypeMemberSyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\UserDefinedTypeSyntax.cs" />
-    <Compile Include="VBA\Parser\IdentifierNode.cs" />
-    <Compile Include="VBA\Parser\IfBlockNode.cs" />
-    <Compile Include="VBA\Parser\Instruction.cs" />
-    <Compile Include="VBA\Parser\LabelNode.cs" />
-    <Compile Include="VBA\Parser\LogicalCodeLine.cs" />
-    <Compile Include="VBA\Parser\DeclarationNode.cs" />
-    <Compile Include="VBA\Parser\Grammar\ISyntax.cs" />
-    <Compile Include="VBA\Parser\Grammar\StringExtensions.cs" />
-    <Compile Include="VBA\Parser\Grammar\VBAGrammar.cs" />
-    <Compile Include="VBA\Parser\Identifier.cs" />
-    <Compile Include="VBA\Parser\Operation.cs" />
-    <Compile Include="VBA\Parser\Operator.cs" />
-    <Compile Include="VBA\Parser\OperatorType.cs" />
-    <Compile Include="VBA\Parser\ParameterNode.cs" />
-    <Compile Include="VBA\Parser\Parser.cs" />
-    <Compile Include="VBA\Parser\ProcedureKind.cs" />
-    <Compile Include="VBA\Parser\ProcedureNode.cs" />
-    <Compile Include="VBA\Parser\Grammar\ReservedKeywords.Designer.cs">
+    <Compile Include="VBA\CodeBlockNode.cs" />
+    <Compile Include="VBA\ConstDeclarationNode.cs" />
+    <Compile Include="VBA\DoLoopNode.cs" />
+    <Compile Include="VBA\EnumMemberNode.cs" />
+    <Compile Include="VBA\EnumNode.cs" />
+    <Compile Include="VBA\Expression.cs" />
+    <Compile Include="VBA\ExpressionNode.cs" />
+    <Compile Include="VBA\ForEachLoopNode.cs" />
+    <Compile Include="VBA\ForLoopNode.cs" />
+    <Compile Include="VBA\Grammar\DeclarationSyntax.cs" />
+    <Compile Include="VBA\Grammar\DoLoopSyntax.cs" />
+    <Compile Include="VBA\Grammar\EnumMemberSyntax.cs" />
+    <Compile Include="VBA\Grammar\EnumSyntax.cs" />
+    <Compile Include="VBA\Grammar\ForEachLoopSyntax.cs" />
+    <Compile Include="VBA\Grammar\ForLoopSyntax.cs" />
+    <Compile Include="VBA\Grammar\IfBlockSyntax.cs" />
+    <Compile Include="VBA\Grammar\LabelSyntax.cs" />
+    <Compile Include="VBA\Grammar\OptionSyntax.cs" />
+    <Compile Include="VBA\Grammar\ProcedureSyntax.cs" />
+    <Compile Include="VBA\Grammar\SyntaxType.cs" />
+    <Compile Include="VBA\Grammar\TypeConversionSyntax.cs" />
+    <Compile Include="VBA\Grammar\UserDefinedTypeMemberSyntax.cs" />
+    <Compile Include="VBA\Grammar\UserDefinedTypeSyntax.cs" />
+    <Compile Include="VBA\IdentifierNode.cs" />
+    <Compile Include="VBA\IfBlockNode.cs" />
+    <Compile Include="VBA\Instruction.cs" />
+    <Compile Include="VBA\LabelNode.cs" />
+    <Compile Include="VBA\LogicalCodeLine.cs" />
+    <Compile Include="VBA\DeclarationNode.cs" />
+    <Compile Include="VBA\Grammar\ISyntax.cs" />
+    <Compile Include="VBA\Grammar\StringExtensions.cs" />
+    <Compile Include="VBA\Grammar\VBAGrammar.cs" />
+    <Compile Include="VBA\Identifier.cs" />
+    <Compile Include="VBA\Operation.cs" />
+    <Compile Include="VBA\Operator.cs" />
+    <Compile Include="VBA\OperatorType.cs" />
+    <Compile Include="VBA\ParameterNode.cs" />
+    <Compile Include="VBA\Parser.cs" />
+    <Compile Include="VBA\ProcedureKind.cs" />
+    <Compile Include="VBA\ProcedureNode.cs" />
+    <Compile Include="VBA\Grammar\ReservedKeywords.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>ReservedKeywords.resx</DependentUpon>
     </Compile>
-    <Compile Include="VBA\Parser\Grammar\SyntaxBase.cs" />
-    <Compile Include="VBA\Parser\SyntaxTreeNode.cs" />
-    <Compile Include="VBA\Parser\TypeConversionNode.cs" />
-    <Compile Include="VBA\Parser\UserDefinedTypeMemberNode.cs" />
-    <Compile Include="VBA\Parser\UserDefinedTypeNode.cs" />
-    <Compile Include="VBA\Parser\VariableDeclarationNode.cs" />
+    <Compile Include="VBA\Grammar\SyntaxBase.cs" />
+    <Compile Include="VBA\SyntaxTreeNode.cs" />
+    <Compile Include="VBA\TypeConversionNode.cs" />
+    <Compile Include="VBA\UserDefinedTypeMemberNode.cs" />
+    <Compile Include="VBA\UserDefinedTypeNode.cs" />
+    <Compile Include="VBA\VariableDeclarationNode.cs" />
     <Compile Include="UI\RubberduckMenu.cs" />
     <Compile Include="ToDoItems\ToDoItem.cs" />
     <Compile Include="UI\ToDoItems\ToDoItemsMenu.cs" />
@@ -250,30 +281,13 @@
     <Compile Include="Extension.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UI\UnitTesting\TestMenu.cs" />
+    <Compile Include="VBEHost\WordApp.cs" />
   </ItemGroup>
   <ItemGroup>
-    <COMReference Include="ADODB">
-      <Guid>{00000205-0000-0010-8000-00AA006D2EA4}</Guid>
-      <VersionMajor>2</VersionMajor>
-      <VersionMinor>5</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>primary</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
     <COMReference Include="Microsoft.Office.Core">
       <Guid>{2DF8D04C-5BFA-101B-BDE5-00AA0044DE52}</Guid>
       <VersionMajor>2</VersionMajor>
       <VersionMinor>4</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>primary</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
-    <COMReference Include="Microsoft.Office.Interop.Access">
-      <Guid>{4AFFC9A0-5F99-101B-AF4E-00AA003F0F07}</Guid>
-      <VersionMajor>9</VersionMajor>
-      <VersionMinor>0</VersionMinor>
       <Lcid>0</Lcid>
       <WrapperTool>primary</WrapperTool>
       <Isolated>False</Isolated>
@@ -288,10 +302,46 @@
       <Isolated>False</Isolated>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
+    <COMReference Include="Microsoft.Office.Interop.Outlook">
+      <Guid>{00062FFF-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>9</VersionMajor>
+      <VersionMinor>5</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="Microsoft.Office.Interop.PowerPoint">
+      <Guid>{91493440-5A91-11CF-8700-00AA0060263B}</Guid>
+      <VersionMajor>2</VersionMajor>
+      <VersionMinor>11</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="Microsoft.Office.Interop.Publisher">
+      <Guid>{0002123C-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>2</VersionMajor>
+      <VersionMinor>2</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
     <COMReference Include="Microsoft.Office.Interop.Word">
       <Guid>{00020905-0000-0000-C000-000000000046}</Guid>
       <VersionMajor>8</VersionMajor>
       <VersionMinor>4</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="stdole">
+      <Guid>{00020430-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>2</VersionMajor>
+      <VersionMinor>0</VersionMinor>
       <Lcid>0</Lcid>
       <WrapperTool>primary</WrapperTool>
       <Isolated>False</Isolated>
@@ -308,6 +358,10 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Inspections\InspectionNames.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>InspectionNames.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="Refactoring\MenuIcons.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>MenuIcons.Designer.cs</LastGenOutput>
@@ -326,17 +380,20 @@
     <EmbeddedResource Include="UI\CodeInspections\CodeInspectionsWindow.resx">
       <DependentUpon>CodeInspectionsWindow.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="UI\Settings\CodeInspectionControl.resx">
+      <DependentUpon>CodeInspectionControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="UI\Settings\ConfigurationTreeView.resx">
       <DependentUpon>ConfigurationTreeView.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\Settings\SettingsDialog.resx">
       <DependentUpon>SettingsDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="UI\Settings\TodoListSettingsControl.resx">
-      <DependentUpon>TodoListSettingsControl.cs</DependentUpon>
+    <EmbeddedResource Include="UI\Settings\TodoListSettingsUserControl.resx">
+      <DependentUpon>TodoListSettingsUserControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="VBA\Parser\Grammar\ReservedKeywords.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
+    <EmbeddedResource Include="VBA\Grammar\ReservedKeywords.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>ReservedKeywords.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\ToDoItems\ToDoExplorerWindow.resx">

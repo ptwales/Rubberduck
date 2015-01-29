@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Rubberduck.VBA.Parser;
-using Rubberduck.VBA.Parser.Grammar;
+using Rubberduck.VBA;
+using Rubberduck.VBA.Grammar;
 
 namespace Rubberduck.Inspections
 {
@@ -14,7 +14,7 @@ namespace Rubberduck.Inspections
             Severity = CodeInspectionSeverity.Suggestion;
         }
 
-        public string Name { get { return "Function returns an implicit Variant"; } }
+        public string Name { get { return InspectionNames.ImplicitVariantReturnType; } }
         public CodeInspectionType InspectionType { get { return CodeInspectionType.CodeQualityIssues; } }
         public CodeInspectionSeverity Severity { get; set; }
 
@@ -25,7 +25,7 @@ namespace Rubberduck.Inspections
                 && !procedure.Instruction.Content.EndsWith(string.Concat(" ", ReservedKeywords.As, " ", ReservedKeywords.Variant))
                 && !procedure.Instruction.Line.IsMultiline);
 
-            return targets.Select(procedure => new ImplicitVariantReturnTypeInspectionResult(Name, procedure.Instruction, Severity));
+            return targets.Select(procedure => new ImplicitVariantReturnTypeInspectionResult(Name, procedure, Severity));
         }
     }
 }

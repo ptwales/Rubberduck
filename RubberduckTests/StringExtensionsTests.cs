@@ -1,6 +1,6 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Rubberduck.VBA.Parser.Grammar;
+using Rubberduck.VBA.Grammar;
 using Rubberduck.Extensions;
 
 namespace RubberduckTests
@@ -8,18 +8,6 @@ namespace RubberduckTests
     [TestClass]
     public class StringExtensionsTests
     {
-        [TestMethod]
-        public void TestAssertAreSameNullNull()
-        {
-            Assert.AreSame(null, null);
-        }
-
-        [TestMethod]
-        public void TestAssertAreNotSameNullNull()
-        {
-            Assert.AreNotSame(null, null);
-        }
-
         [TestMethod]
         public void StripsStringLiteral()
         {
