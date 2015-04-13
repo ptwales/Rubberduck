@@ -1,32 +1,43 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Microsoft.Office.Core;
 using Microsoft.Vbe.Interop;
 using Rubberduck.Extensions;
 using Rubberduck.Inspections;
 using Rubberduck.Properties;
 using Rubberduck.VBA;
+using Rubberduck.VBA.Grammar;
+using Rubberduck.VBA.Nodes;
 
 namespace Rubberduck.UI.CodeInspections
 {
-    [ComVisible(false)]
     public class CodeInspectionsToolbar
     {
         private readonly VBE _vbe;
         private readonly IEnumerable<IInspection> _inspections;
-        private readonly Parser _parser;
+        private readonly IRubberduckParser _parser;
+        private readonly IInspector _inspector;
 
-        private CodeInspectionResultBase[] _issues;
+        private List<ICodeInspectionResult> _issues;
         private int _currentIssue;
+        private int _issueCount;
 
-        public CodeInspectionsToolbar(VBE vbe, Parser parser, IEnumerable<IInspection> inspections)
+        public CodeInspectionsToolbar(VBE vbe, IRubberduckParser parser, IEnumerable<IInspection> inspections)
         {
             _vbe = vbe;
             _parser = parser;
             _inspections = inspections;
+        }
+
+        public CodeInspectionsToolbar(VBE vbe, IInspector inspector)
+        {
+            _vbe = vbe;
+            _inspector = inspector;
         }
 
         private CommandBarButton _refreshButton;
@@ -61,59 +72,62 @@ namespace Rubberduck.UI.CodeInspections
             _navigatePreviousButton.Caption = "Previous";
             _navigatePreviousButton.TooltipText = "Navigate to previous issue";
             _navigatePreviousButton.Style = MsoButtonStyle.msoButtonIconAndCaption;
-            _navigatePreviousButton.FaceId = 41; // Resources.112_LeftArrowLong_Blue_16x16_72 makes a gray block when disabled
+            _navigatePreviousButton.FaceId = 41; // Resources.112_LeftArrowLong_Blue_16x16_72 makes a gray Block when disabled
             _navigatePreviousButton.Enabled = false;
 
             _navigateNextButton = (CommandBarButton)toolbar.Controls.Add(MsoControlType.msoControlButton, Temporary: true);
             _navigateNextButton.Caption = "Next";
             _navigateNextButton.TooltipText = "Navigate to next issue";
             _navigateNextButton.Style = MsoButtonStyle.msoButtonIconAndCaption;
-            _navigateNextButton.FaceId = 39; // Resources.112_RightArrowLong_Blue_16x16_72 makes a gray block when disabled
+            _navigateNextButton.FaceId = 39; // Resources.112_RightArrowLong_Blue_16x16_72 makes a gray Block when disabled
             _navigateNextButton.Enabled = false;
 
             _refreshButton.Click += _refreshButton_Click;
             _quickFixButton.Click += _quickFixButton_Click;
             _navigatePreviousButton.Click += _navigatePreviousButton_Click;
             _navigateNextButton.Click += _navigateNextButton_Click;
+
+            _inspector.IssuesFound += OnIssuesFound;
+            _inspector.Reset += OnReset;
         }
 
         private void _navigateNextButton_Click(CommandBarButton Ctrl, ref bool CancelDefault)
         {
-            if (_issues.Length == 0)
+            if (_issues.Count == 0)
             {
                 return;
             }
 
-            if (_currentIssue == _issues.Length - 1)
+            if (_currentIssue == _issues.Count - 1)
             {
                 _currentIssue = - 1;
             }
 
             _currentIssue++;
-            OnNavigateCodeIssue(null, new NavigateCodeIssueEventArgs(_issues[_currentIssue].Node));
+            OnNavigateCodeIssue(null, new NavigateCodeEventArgs(_issues[_currentIssue].QualifiedSelection.QualifiedName, _issues[_currentIssue].Context));
         }
 
         private void _navigatePreviousButton_Click(CommandBarButton Ctrl, ref bool CancelDefault)
         {
-            if (_issues.Length == 0)
+            if (_issues.Count == 0)
             {
                 return;
             }
 
             if (_currentIssue == 0)
             {
-                _currentIssue = _issues.Length;
+                _currentIssue = _issues.Count;
             }
 
             _currentIssue--;
-            OnNavigateCodeIssue(null, new NavigateCodeIssueEventArgs(_issues[_currentIssue].Node));
+            OnNavigateCodeIssue(null, new NavigateCodeEventArgs(_issues[_currentIssue].QualifiedSelection.QualifiedName, _issues[_currentIssue].Context));
         }
 
-        private void OnNavigateCodeIssue(object sender, NavigateCodeIssueEventArgs e)
+        private void OnNavigateCodeIssue(object sender, NavigateCodeEventArgs e)
         {
             try
             {
-                var location = _vbe.FindInstruction(e.Node.Instruction);
+                var location = _vbe.FindInstruction(e.QualifiedName, e.Selection);
                 location.CodeModule.CodePane.SetSelection(location.Selection);
 
                 var codePane = location.CodeModule.CodePane;
@@ -127,7 +141,6 @@ namespace Rubberduck.UI.CodeInspections
                 System.Diagnostics.Debug.Assert(false);
             }
         }
-
 
         private void _quickFixButton_Click(CommandBarButton Ctrl, ref bool CancelDefault)
         {
@@ -149,33 +162,39 @@ namespace Rubberduck.UI.CodeInspections
 
         private void _refreshButton_Click(CommandBarButton Ctrl, ref bool CancelDefault)
         {
-            var code = _parser.Parse(_vbe.ActiveVBProject);
-            var results = new List<CodeInspectionResultBase>();
-            foreach (var inspection in _inspections.Where(inspection => inspection.Severity != CodeInspectionSeverity.DoNotShow))
-            {
-                var result = inspection.GetInspectionResults(code).ToArray();
-                if (result.Length != 0)
-                {
-                    results.AddRange(result);
-                }
-            }
+            RefreshAsync();
+        }
 
-            _issues = results.ToArray();
-            _currentIssue = 0;
+        private void OnIssuesFound(object sender, InspectorIssuesFoundEventArg e)
+        {
+            _issueCount = _issueCount + e.Issues.Count;
+            _statusButton.Caption = string.Format("{0} issue" + (_issueCount == 1 ? string.Empty : "s"), _issueCount);
+        }
 
-            var hasIssues = results.Any();
+        private async void RefreshAsync()
+        {
+            var result = await _inspector.FindIssuesAsync(_vbe.ActiveVBProject);
+            _issues = result.ToList();
+
+            var hasIssues = _issues.Any();
             _quickFixButton.Enabled = hasIssues;
             SetQuickFixTooltip();
             _navigateNextButton.Enabled = hasIssues;
             _navigatePreviousButton.Enabled = hasIssues;
-            _statusButton.Caption = string.Format("{0} issue" + (results.Count == 1 ? string.Empty : "s"), results.Count);
+        }
+
+        private void OnReset(object sender, EventArgs e)
+        {
+            _currentIssue = 0;
+            _issueCount = 0;
         }
 
         private void SetQuickFixTooltip()
         {
-            if (_issues.Length == 0)
+            if (_issues.Count == 0)
             {
                 _quickFixButton.TooltipText = string.Empty;
+                _statusButton.TooltipText = string.Empty;
                 return;
             }
 
@@ -186,6 +205,7 @@ namespace Rubberduck.UI.CodeInspections
             }
 
             _quickFixButton.TooltipText = fix.Key;
+            _statusButton.TooltipText = _issues[_currentIssue].Name;
         }
     }
 }

@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace Rubberduck.Reflection
 {
-    [ComVisible(false)]
     public enum MemberType
     {
         Field,
@@ -19,7 +18,6 @@ namespace Rubberduck.Reflection
         PropertySet
     }
 
-    [ComVisible(false)]
     public enum MemberVisibility
     {
         Public,
@@ -27,7 +25,6 @@ namespace Rubberduck.Reflection
         Friend
     }
 
-    [ComVisible(false)]
     public class Member
     {
         public Member(MemberVisibility visibility, 
@@ -49,7 +46,11 @@ namespace Rubberduck.Reflection
         }
 
         private readonly string _projectName;
+        public string ProjectName { get { return _projectName; } }
+
         private readonly string _moduleName;
+        public string ModuleName { get { return _moduleName; } }
+
         public string QualifiedName { get { return string.Concat(_projectName, ".", _moduleName, ".", _name); } }
 
         private readonly MemberType _memberType;
@@ -172,7 +173,6 @@ namespace Rubberduck.Reflection
         }
     }
 
-    [ComVisible(false)]
     public class MemberAttribute
     {
         private const string AttributeSyntax = 

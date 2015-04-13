@@ -1,85 +1,130 @@
-﻿using System;
+﻿using Microsoft.Vbe.Interop;
+using Rubberduck.Extensions;
+using Rubberduck.Inspections;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.Vbe.Interop;
-using Rubberduck.Extensions;
-using Rubberduck.Inspections;
-using Rubberduck.VBA;
 
 namespace Rubberduck.UI.CodeInspections
 {
-    [ComVisible(false)]
     public class CodeInspectionsDockablePresenter : DockablePresenterBase
     {
-        private readonly Parser _parser;
         private CodeInspectionsWindow Control { get { return UserControl as CodeInspectionsWindow; } }
 
-        private readonly IList<IInspection> _inspections;
-        private List<CodeInspectionResultBase> _results;
+        private IList<ICodeInspectionResult> _results;
+        private readonly IInspector _inspector;
 
-        public CodeInspectionsDockablePresenter(Parser parser, IEnumerable<IInspection> inspections, VBE vbe, AddIn addin) 
-            : base(vbe, addin, new CodeInspectionsWindow())
+        public CodeInspectionsDockablePresenter(IInspector inspector, VBE vbe, AddIn addin, CodeInspectionsWindow window)
+            :base(vbe, addin, window)
         {
-            _parser = parser;
-            _inspections = inspections.ToList();
+            _inspector = inspector;
+            _inspector.IssuesFound += OnIssuesFound;
+            _inspector.Reset += OnReset;
 
             Control.RefreshCodeInspections += OnRefreshCodeInspections;
             Control.NavigateCodeIssue += OnNavigateCodeIssue;
             Control.QuickFix += OnQuickFix;
+            Control.CopyResults += OnCopyResultsToClipboard;
+        }
+
+        private void OnCopyResultsToClipboard(object sender, EventArgs e)
+        {
+            var results = string.Join("\n", _results.Select(FormatResultForClipboard));
+            var text = string.Format("Rubberduck Code Inspections - {0}\n{1} issue" + (_results.Count != 1 ? "s" : string.Empty) + " found.\n",
+                            DateTime.Now, _results.Count) + results;
+
+            Clipboard.SetText(text);
+        }
+
+        private string FormatResultForClipboard(ICodeInspectionResult result)
+        {
+            var module = result.QualifiedSelection.QualifiedName;
+            return string.Format(
+                "{0}: {1} - {2}.{3}, line {4}",
+                result.Severity,
+                result.Name,
+                module.ProjectName,
+                module.ModuleName,
+                result.QualifiedSelection.Selection.StartLine);
+        }
+
+        private void OnIssuesFound(object sender, InspectorIssuesFoundEventArg e)
+        {
+            var newCount = Control.IssueCount + e.Issues.Count;
+            Control.IssueCount = newCount;
+            Control.IssueCountText = string.Format("{0} issue" + (newCount != 1 ? "s" : string.Empty), newCount);
         }
 
         private void OnQuickFix(object sender, QuickFixEventArgs e)
         {
             e.QuickFix(VBE);
             OnRefreshCodeInspections(null, EventArgs.Empty);
-            Control.FindNextIssue();
         }
 
         public override void Show()
         {
-            if (VBE.ActiveVBProject != null)
-            {
-                OnRefreshCodeInspections(this, EventArgs.Empty);
-            }
             base.Show();
+            Refresh();
         }
 
-        private void OnNavigateCodeIssue(object sender, NavigateCodeIssueEventArgs e)
+        private void OnNavigateCodeIssue(object sender, NavigateCodeEventArgs e)
         {
             try
             {
-                var location = VBE.FindInstruction(e.Node.Instruction);
-                location.CodeModule.CodePane.SetSelection(location.Selection);
+                var location = VBE.FindInstruction(e.QualifiedName, e.Selection);
+                location.CodeModule.CodePane.SetSelection(e.Selection);
 
                 var codePane = location.CodeModule.CodePane;
                 var selection = location.Selection;
-                codePane.SetSelection(selection.StartLine, selection.StartColumn, selection.EndLine, selection.EndColumn);
-                codePane.ForceFocus();
+                codePane.SetSelection(selection);
             }
             catch (Exception exception)
             {
-                System.Diagnostics.Debug.Assert(false);
+                System.Diagnostics.Debug.Assert(false, exception.ToString());
             }
         }
 
         private void OnRefreshCodeInspections(object sender, EventArgs e)
         {
-            var code = _parser.Parse(VBE.ActiveVBProject);
-            _results = new List<CodeInspectionResultBase>();
-            foreach (var inspection in _inspections.Where(inspection => inspection.Severity != CodeInspectionSeverity.DoNotShow))
+            Refresh();
+        }
+
+        private async void Refresh()
+        {
+            Control.Cursor = Cursors.WaitCursor;
+
+            try
             {
-                var result = inspection.GetInspectionResults(code).ToArray();
-                if (result.Length != 0)
+                if (VBE != null)
                 {
-                    _results.AddRange(result);
+                    _results = await _inspector.FindIssuesAsync(VBE.ActiveVBProject);
+                    Control.SetContent(_results.Select(item => new CodeInspectionResultGridViewItem(item))
+                        .OrderBy(item => item.Component)
+                        .ThenBy(item => item.Line));
+
+                    if (!_results.Any())
+                    {
+                        Control.QuickFixButton.Enabled = false;
+                    }
                 }
             }
+            catch (COMException)
+            {
+                // swallow
+            }
+            finally
+            {
+                Control.Cursor = Cursors.Default;
+            }
+        }
 
-            Control.SetContent(_results.Select(item => new CodeInspectionResultGridViewItem(item)).OrderBy(item => item.Component).ThenBy(item => item.Line));
+        private void OnReset(object sender, EventArgs e)
+        {
+            Control.IssueCount = 0;
+            Control.IssueCountText = "0 issues";
+            Control.InspectionResults.Clear();
         }
     }
 }

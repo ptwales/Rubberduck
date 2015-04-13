@@ -1,24 +1,30 @@
-﻿using System;
+﻿using Microsoft.Vbe.Interop;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
-using System.Data;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.Vbe.Interop;
-using Rubberduck.VBA;
 
 namespace Rubberduck.UI.CodeInspections
 {
-    [ComVisible(false)]
     public partial class CodeInspectionsWindow : UserControl, IDockableUserControl
     {
         private const string ClassId = "D3B2A683-9856-4246-BDC8-6B0795DC875B";
         string IDockableUserControl.ClassId { get { return ClassId; } }
         string IDockableUserControl.Caption { get { return "Code Inspections"; } }
+        
+        public BindingList<CodeInspectionResultGridViewItem> InspectionResults 
+        {
+            get { return CodeIssuesGridView.DataSource as BindingList<CodeInspectionResultGridViewItem>; }
+            set { CodeIssuesGridView.DataSource = value; }
+        }
+
+        public int IssueCount {get; set;}
+        public string IssueCountText 
+        {
+            get { return StatusLabel.Text; }
+            set { StatusLabel.Text = value; }
+        }
 
         public CodeInspectionsWindow()
         {
@@ -28,15 +34,27 @@ namespace Rubberduck.UI.CodeInspections
             GoButton.Click += GoButton_Click;
             PreviousButton.Click += PreviousButton_Click;
             NextButton.Click += NextButton_Click;
+            CopyButton.Click += CopyButton_Click;
 
             var items = new List<CodeInspectionResultGridViewItem>();
             CodeIssuesGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             CodeIssuesGridView.DataSource = new BindingList<CodeInspectionResultGridViewItem>(items);
+
             CodeIssuesGridView.AutoResizeColumns();
             CodeIssuesGridView.Columns["Issue"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
             CodeIssuesGridView.SelectionChanged += CodeIssuesGridView_SelectionChanged;
             CodeIssuesGridView.CellDoubleClick += CodeIssuesGridView_CellDoubleClick;
+        }
+
+        public event EventHandler CopyResults;
+        private void CopyButton_Click(object sender, EventArgs e)
+        {
+            var handler = CopyResults;
+            if (handler != null)
+            {
+                handler(this, EventArgs.Empty);
+            }
         }
 
         private void QuickFixButton_Click(object sender, EventArgs e)
@@ -53,11 +71,6 @@ namespace Rubberduck.UI.CodeInspections
             CodeIssuesGridView.Rows[previousIssueIndex].Selected = true;
             var item = CodeIssuesGridView.Rows[previousIssueIndex].DataBoundItem as CodeInspectionResultGridViewItem;
             OnNavigateCodeIssue(item);
-        }
-
-        public void FindNextIssue()
-        {
-            NextButton_Click(this, EventArgs.Empty);
         }
 
         private void NextButton_Click(object sender, EventArgs e)
@@ -83,6 +96,16 @@ namespace Rubberduck.UI.CodeInspections
             NextButton.Enabled = enableNavigation;
             PreviousButton.Enabled = enableNavigation;
             GoButton.Enabled = enableNavigation;
+            CopyButton.Enabled = enableNavigation;
+
+            var quickFixMenu = QuickFixButton.DropDownItems;
+            if (quickFixMenu.Count > 0)
+            {
+                foreach (var quickFixButton in quickFixMenu.Cast<ToolStripMenuItem>())
+                {
+                    quickFixButton.Click -= QuickFixItemClick;
+                }
+            }
 
             if (CodeIssuesGridView.SelectedRows.Count > 0)
             {
@@ -90,15 +113,6 @@ namespace Rubberduck.UI.CodeInspections
                 _availableQuickFixes = issue.GetInspectionResultItem()
                     .GetQuickFixes();
                 var descriptions = _availableQuickFixes.Keys.ToList();
-
-                var quickFixMenu = QuickFixButton.DropDownItems;
-                if (quickFixMenu.Count > 0)
-                {
-                    foreach (var quickFixButton in quickFixMenu.Cast<ToolStripMenuItem>())
-                    {
-                        quickFixButton.Click -= QuickFixItemClick;
-                    }
-                }
 
                 quickFixMenu.Clear();
                 foreach (var caption in descriptions)
@@ -132,7 +146,6 @@ namespace Rubberduck.UI.CodeInspections
         public void SetContent(IEnumerable<CodeInspectionResultGridViewItem> inspectionResults)
         {
             var results = inspectionResults.ToList();
-            StatusLabel.Text = string.Format("{0} issue" + (results.Count > 1 ? "s" : string.Empty), results.Count);
 
             CodeIssuesGridView.DataSource = new BindingList<CodeInspectionResultGridViewItem>(results);
             CodeIssuesGridView.Refresh();
@@ -144,7 +157,7 @@ namespace Rubberduck.UI.CodeInspections
             OnNavigateCodeIssue(issue);
         }
 
-        public event EventHandler<NavigateCodeIssueEventArgs> NavigateCodeIssue;
+        public event EventHandler<NavigateCodeEventArgs> NavigateCodeIssue;
         private void CodeIssuesGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0)
@@ -163,7 +176,8 @@ namespace Rubberduck.UI.CodeInspections
                 return;
             }
 
-            handler(this, new NavigateCodeIssueEventArgs(item.GetInspectionResultItem().Node));
+            var result = item.GetInspectionResultItem();
+            handler(this, new NavigateCodeEventArgs(result.QualifiedSelection));
         }
 
         public event EventHandler RefreshCodeInspections;
@@ -174,6 +188,8 @@ namespace Rubberduck.UI.CodeInspections
             {
                 return;
             }
+
+            toolStrip1.Refresh();
 
             handler(this, EventArgs.Empty);
         }

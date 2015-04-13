@@ -8,14 +8,28 @@ using Rubberduck.ToDoItems;
 
 namespace Rubberduck.UI.ToDoItems
 {
-    [ComVisible(false)]
-    public partial class ToDoExplorerWindow : UserControl, IDockableUserControl
+    public partial class ToDoExplorerWindow : UserControl, IToDoExplorerWindow
     {
         private const string ClassId = "8B071EDA-2C9C-4009-9A22-A1958BF98B28";
         string IDockableUserControl.ClassId { get { return ClassId; } }
         string IDockableUserControl.Caption { get { return "ToDo Explorer"; } }
 
-        private readonly BindingList<ToDoItem> _todoItems;
+        public string SortedByColumn { get; set; }
+        public bool SortedAscending { get; set; }
+
+        private BindingList<ToDoItem> _todoItems;
+        public IEnumerable<ToDoItem> TodoItems 
+        { 
+            get { return _todoItems; }
+            set 
+            { 
+                _todoItems = new BindingList<ToDoItem>(value.ToList());
+                todoItemsGridView.DataSource = _todoItems;
+                todoItemsGridView.Refresh();
+            }
+        }
+
+        public DataGridView GridView { get { return todoItemsGridView; } }
 
         public ToDoExplorerWindow()
             : this(new ToDoItem[]{})
@@ -42,6 +56,11 @@ namespace Rubberduck.UI.ToDoItems
         public event EventHandler<ToDoItemClickEventArgs> NavigateToDoItem;
         private void ToDoGridViewCellDoubleClicked(object sender, DataGridViewCellEventArgs e)
         {
+            if (e.RowIndex < 0)
+            {
+                return;
+            }
+
             var handler = NavigateToDoItem;
             if (handler == null)
             {
@@ -65,13 +84,16 @@ namespace Rubberduck.UI.ToDoItems
             handler(this, EventArgs.Empty);
         }
 
-        public void SetItems(IEnumerable<ToDoItem> items)
+        public event EventHandler<DataGridViewCellMouseEventArgs> SortColumn;
+        private void ColumnHeaderMouseClicked(object sender, DataGridViewCellMouseEventArgs e)
         {
-            _todoItems.Clear();
-            foreach (var toDoItem in items)
+            var handler = SortColumn;
+            if (handler == null)
             {
-                _todoItems.Add(toDoItem);
+                return;
             }
+
+            handler(this, e);
         }
     }
 }

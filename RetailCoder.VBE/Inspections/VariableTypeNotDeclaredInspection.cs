@@ -1,31 +1,52 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
+using Antlr4.Runtime;
 using Rubberduck.VBA;
 using Rubberduck.VBA.Grammar;
+using Rubberduck.VBA.Nodes;
+using Rubberduck.VBA.ParseTreeListeners;
 
 namespace Rubberduck.Inspections
 {
-    [ComVisible(false)]
     public class VariableTypeNotDeclaredInspection : IInspection
     {
         public VariableTypeNotDeclaredInspection()
         {
-            Severity = CodeInspectionSeverity.Warning;
+            Severity = CodeInspectionSeverity.Suggestion;
         }
 
-        public string Name { get { return InspectionNames.VariableTypeNotDeclared; } }
-        public CodeInspectionType InspectionType { get { return CodeInspectionType.CodeQualityIssues; } }
+        public string Name { get { return InspectionNames.VariableTypeNotDeclared_; } }
+        public CodeInspectionType InspectionType { get { return CodeInspectionType.LanguageOpportunities; } }
         public CodeInspectionSeverity Severity { get; set; }
 
-        public IEnumerable<CodeInspectionResultBase> GetInspectionResults(SyntaxTreeNode node)
+        public IEnumerable<CodeInspectionResultBase> GetInspectionResults(VBProjectParseResult parseResult)
         {
-            var identifiers = node.FindAllDeclarations()
-                .Where(declaration => !declaration.Instruction.Line.IsMultiline)
-                .SelectMany(declaration => declaration.ChildNodes.Cast<IdentifierNode>())
-                .Where(identifier => !identifier.IsTypeSpecified);
+            foreach (var result in parseResult.ComponentParseResults)
+            {
+                var declarations = 
+                    result.ParseTree.GetContexts<
+                        DeclarationListener, ParserRuleContext>(new DeclarationListener(result.QualifiedName)).ToList();
+                var module = result; // to avoid access to modified closure in below lambdas
 
-            return identifiers.Select(identifier => new VariableTypeNotDeclaredInspectionResult(Name, identifier, Severity));
+                // we want declarations with a null AsTypeClause() and a null TypeHint().
+
+                var constants = declarations.Where(declaration => declaration.Context is VBParser.ConstSubStmtContext)
+                                            .Select(declaration => declaration.Context)
+                                            .Cast<VBParser.ConstSubStmtContext>()
+                                            .Where(constant => constant.AsTypeClause() == null && constant.TypeHint() == null)
+                                            .Select(constant => new VariableTypeNotDeclaredInspectionResult(string.Format(Name, constant.AmbiguousIdentifier().GetText()), Severity, constant, module.QualifiedName));
+
+                var variables = declarations.Where(declaration => declaration.Context is VBParser.VariableSubStmtContext)
+                                            .Select(declaration => declaration.Context)
+                                            .Cast<VBParser.VariableSubStmtContext>()
+                                            .Where(variable => variable.AsTypeClause() == null && variable.TypeHint() == null)
+                                            .Select(variable => new VariableTypeNotDeclaredInspectionResult(string.Format(Name, variable.AmbiguousIdentifier().GetText()), Severity, variable, module.QualifiedName));
+
+                foreach (var inspectionResult in constants.Concat(variables))
+                {
+                    yield return inspectionResult;
+                }
+            }
         }
     }
 }

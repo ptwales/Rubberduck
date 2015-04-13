@@ -1,56 +1,94 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Linq;
 using Microsoft.Vbe.Interop;
 using Rubberduck.Extensions;
 using Rubberduck.VBA;
 using Rubberduck.VBA.Grammar;
+using Rubberduck.VBA.Nodes;
 
 namespace Rubberduck.Inspections
 {
-    [ComVisible(false)]
     public class ObsoleteCommentSyntaxInspectionResult : CodeInspectionResultBase
     {
-        public ObsoleteCommentSyntaxInspectionResult(string inspection, SyntaxTreeNode node, CodeInspectionSeverity type) 
-            : base(inspection, node, type)
+        public ObsoleteCommentSyntaxInspectionResult(string inspection, CodeInspectionSeverity type, CommentNode comment) 
+            : base(inspection, type, comment)
         {
         }
 
         public override IDictionary<string, Action<VBE>> GetQuickFixes()
         {
-            return !Handled
-                ? new Dictionary<string, Action<VBE>>
-                    {
-                        {"Replace Rem reserved keyword with single quote", ReplaceWithSingleQuote},
-                        {"Remove comment", RemoveComment}
-                    }
-                : new Dictionary<string, Action<VBE>>();
+            return
+                new Dictionary<string, Action<VBE>>
+                {
+                    {"Replace 'Rem' usage with a single-quote comment marker", ReplaceWithSingleQuote},
+                    {"Remove comment", RemoveComment}
+                };
         }
 
         private void ReplaceWithSingleQuote(VBE vbe)
         {
-            var instruction = Node.Instruction;
-            var location = vbe.FindInstruction(instruction);
-            int index;
-            if (!instruction.Line.Content.HasComment(out index)) return;
-            
-            var line = instruction.Line.Content.Substring(0, index) + "'" + instruction.Comment.Substring(ReservedKeywords.Rem.Length);
-            location.CodeModule.ReplaceLine(location.Selection.StartLine, line);
+            var module = vbe.FindCodeModules(QualifiedName).FirstOrDefault();
+            if (module == null)
+            {
+                return;
+            }
 
-            Handled = true;
+            var content = module.get_Lines(QualifiedSelection.Selection.StartLine, QualifiedSelection.Selection.LineCount);
+
+            int markerPosition;
+            if (!content.HasComment(out markerPosition))
+            {
+                return;
+            }
+
+            var code = string.Empty;
+            if (markerPosition > 0)
+            {
+                code = content.Substring(0, markerPosition - 1);
+            }
+
+            var newContent = code + Tokens.CommentMarker + " " + Comment.CommentText;
+
+            if (Comment.QualifiedSelection.Selection.LineCount > 1)
+            {
+                module.DeleteLines(Comment.QualifiedSelection.Selection.StartLine + 1, Comment.QualifiedSelection.Selection.LineCount);
+            }
+
+            module.ReplaceLine(QualifiedSelection.Selection.StartLine, newContent);
         }
 
         private void RemoveComment(VBE vbe)
         {
-            var instruction = Node.Instruction;
-            var location = vbe.FindInstruction(instruction);
-            int index;
-            if (!instruction.Line.Content.HasComment(out index)) return;
+            var module = vbe.FindCodeModules(QualifiedName).FirstOrDefault();
+            if (module == null)
+            {
+                return;
+            }
 
-            var line = instruction.Line.Content.Substring(0, index);
-            location.CodeModule.ReplaceLine(location.Selection.StartLine, line);
+            var content = module.get_Lines(QualifiedSelection.Selection.StartLine, QualifiedSelection.Selection.LineCount);
 
-            Handled = true;
+            int markerPosition;
+            if (!content.HasComment(out markerPosition))
+            {
+                return;
+            }
+
+            var code = string.Empty;
+            if (markerPosition > 0)
+            {
+                code = content.Substring(0, markerPosition - 1);
+            }
+
+            if (Comment.QualifiedSelection.Selection.LineCount > 1)
+            {
+                module.DeleteLines(Comment.QualifiedSelection.Selection.StartLine, Comment.QualifiedSelection.Selection.LineCount);
+            }
+
+            if (!string.IsNullOrEmpty(code))
+            {
+                module.ReplaceLine(Comment.QualifiedSelection.Selection.StartLine, code);
+            }
         }
     }
 }

@@ -1,19 +1,18 @@
-using System.Runtime.InteropServices;
 using Microsoft.Office.Interop.Word;
 
-namespace Rubberduck
+namespace Rubberduck.VBEHost
 {
-    [ComVisible(false)]
     public class WordApp : HostApplicationBase<Application>
     {
         public WordApp() : base("Word") { }
 
-        public override void Run(string target)
+        public override void Run(string projectName, string moduleName, string methodName)
         {
-            base._application.Run(target);
+            var call = GenerateMethodCall(projectName, moduleName, methodName);
+            Application.Run(call);
         }
 
-        protected override string GenerateFullyQualifiedName(string projectName, string moduleName, string methodName)
+        protected override string GenerateMethodCall(string projectName, string moduleName, string methodName)
         {
             return string.Concat(moduleName, ".", methodName);
         }

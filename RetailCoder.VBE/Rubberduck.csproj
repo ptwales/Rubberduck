@@ -1,5 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\LibGit2Sharp.0.21.0.176\build\net40\LibGit2Sharp.props" Condition="Exists('..\packages\LibGit2Sharp.0.21.0.176\build\net40\LibGit2Sharp.props')" />
+  <Import Project="..\packages\Antlr4.4.3.0\build\Antlr4.props" Condition="Exists('..\packages\Antlr4.4.3.0\build\Antlr4.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -11,6 +13,7 @@
     <AssemblyName>Rubberduck</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <NuGetPackageImportStamp>580a495d</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -25,7 +28,7 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
@@ -33,6 +36,7 @@
     <WarningLevel>4</WarningLevel>
     <RegisterForComInterop>true</RegisterForComInterop>
     <DocumentationFile>bin\Release\Rubberduck.XML</DocumentationFile>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugAccess|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -45,9 +49,163 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DocumentationFile>bin\Debug\Rubberduck.XML</DocumentationFile>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <NoWarn>1591</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <DocumentationFile>bin\Release\Rubberduck.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugAccess|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\DebugAccess\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DocumentationFile>bin\Debug\Rubberduck.XML</DocumentationFile>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DocumentationFile>bin\Debug\Rubberduck.XML</DocumentationFile>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <NoWarn>1591</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <DocumentationFile>bin\Release\Rubberduck.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugAccess|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\DebugAccess\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DocumentationFile>bin\Debug\Rubberduck.XML</DocumentationFile>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Ducky.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug64|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug64\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DocumentationFile>bin\Debug\Rubberduck.XML</DocumentationFile>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <NoWarn>1591</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug64|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug64\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DocumentationFile>bin\Debug\Rubberduck.XML</DocumentationFile>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <NoWarn>1591</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug64|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug64\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DocumentationFile>bin\Debug\Rubberduck.XML</DocumentationFile>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <NoWarn>1591</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release64|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Release64\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <DocumentationFile>
+    </DocumentationFile>
+    <Optimize>true</Optimize>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release64|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Release64\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <DocumentationFile>bin\Release\Rubberduck.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release64|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Release64\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <DocumentationFile>bin\Release\Rubberduck.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <RegisterForComInterop>true</RegisterForComInterop>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Antlr4.Runtime.net45">
+      <HintPath>..\packages\Antlr4.Runtime.4.3.0\lib\net45\Antlr4.Runtime.net45.dll</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
     <Reference Include="extensibility, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="LibGit2Sharp">
+      <HintPath>..\packages\LibGit2Sharp.0.21.0.176\lib\net40\LibGit2Sharp.dll</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="Microsoft.Office.Interop.Access, Version=14.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -66,8 +224,124 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\VbProjectExtensions.cs" />
+    <Compile Include="Inspections\ICodeInspectionResult.cs" />
+    <Compile Include="Inspections\IdentifierUsageInspector.cs" />
+    <Compile Include="Inspections\IInspector.cs" />
+    <Compile Include="Inspections\ImplicitPublicMemberInspection.cs" />
+    <Compile Include="Inspections\ImplicitPublicMemberInspectionResult.cs" />
+    <Compile Include="Inspections\Inspector.cs" />
+    <Compile Include="Inspections\ModuleOptionsNotSpecifiedFirstInspection.cs" />
+    <Compile Include="Inspections\ModuleOptionsNotSpecifiedFirstInspectionResult.cs" />
+    <Compile Include="Inspections\NonReturningFunctionInspection.cs" />
+    <Compile Include="Inspections\NonReturningFunctionInspectionResult.cs" />
+    <Compile Include="Inspections\ObsoleteCallStatementInspection.cs" />
+    <Compile Include="Inspections\ObsoleteCallStatementUsageInspectionResult.cs" />
+    <Compile Include="Inspections\ObsoleteGlobalInspection.cs" />
+    <Compile Include="Inspections\ObsoleteGlobalInspectionResult.cs" />
+    <Compile Include="Inspections\ObsoleteLetStatementInspection.cs" />
+    <Compile Include="Inspections\ObsoleteLetStatementUsageInspectionResult.cs" />
+    <Compile Include="Inspections\ObsoleteTypeHintInspection.cs" />
+    <Compile Include="Inspections\ObsoleteTypeHintInspectionResult.cs" />
+    <Compile Include="Inspections\OptionBaseInspection.cs" />
+    <Compile Include="Inspections\OptionBaseInspectionResult.cs" />
+    <Compile Include="Inspections\ParameterCanBeByValInspection.cs" />
+    <Compile Include="Inspections\ParameterCanBeByValInspectionResult.cs" />
+    <Compile Include="Inspections\ParameterNotUsedInspection.cs" />
+    <Compile Include="Inspections\ParameterNotUsedInspectionResult.cs" />
+    <Compile Include="Inspections\QualifiedMemberName.cs" />
+    <Compile Include="Inspections\QualifiedModuleName.cs" />
+    <Compile Include="Inspections\UnassignedVariableUsageInspection.cs" />
+    <Compile Include="Inspections\UnassignedVariableUsageInspectionResult.cs" />
+    <Compile Include="Inspections\VariableNotDeclaredInspection.cs" />
+    <Compile Include="Inspections\VariableNotDeclaredInspectionResult.cs" />
+    <Compile Include="Inspections\VariableNotUsedInspection.cs" />
+    <Compile Include="Inspections\VariableNotUsedInspectionResult.cs" />
+    <Compile Include="Inspections\VariableNotAssignedInspection.cs" />
+    <Compile Include="Inspections\VariableNotAssignedInspectionResult.cs" />
+    <Compile Include="Interop\Branches.cs" />
+    <Compile Include="Interop\FileStatusEntries.cs" />
+    <Compile Include="Interop\GitProvider.cs" />
+    <Compile Include="Interop\ISourceControlProvider.cs" />
+    <Compile Include="Interop\SourceControlClassFactory.cs" />
+    <Compile Include="SourceControl\FileStatus.cs" />
+    <Compile Include="SourceControl\FileStatusEntry.cs" />
+    <Compile Include="SourceControl\IRepository.cs" />
+    <Compile Include="SourceControl\Repository.cs" />
+    <Compile Include="UI\CodeExplorer\TreeNodeNavigateCodeEventArgs.cs" />
+    <Compile Include="UI\Refactorings\ExtractMethod\ExtractMethodRefactoring.cs" />
+    <Compile Include="UI\Refactorings\ExtractMethod\ExtractMethodPresenter.cs" />
+    <Compile Include="UI\Refactorings\ExtractMethod\ExtractedDeclarationUsage.cs" />
+    <Compile Include="UI\Refactorings\ExtractMethod\ExtractedParameter.cs" />
+    <Compile Include="UI\Refactorings\ExtractMethod\ExtractMethodDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Refactorings\ExtractMethod\ExtractMethodDialog.Designer.cs">
+      <DependentUpon>ExtractMethodDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Refactorings\ExtractMethod\ValueChangedEventArgs.cs" />
+    <Compile Include="UI\SourceControl\SourceControlPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\SourceControl\SourceControlPanel.Designer.cs">
+      <DependentUpon>SourceControlPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ToDoItems\IToDoExplorerWindow.cs" />
+    <Compile Include="UnitTesting\ITestEngine.cs" />
+    <Compile Include="UnitTesting\TestEngine.cs" />
+    <Compile Include="VBA\Nodes\OptionNode.cs" />
+    <Compile Include="VBA\Nodes\EnumNode.cs" />
+    <Compile Include="VBA\Nodes\DeclaredIdentifierNode.cs" />
+    <Compile Include="VBA\Nodes\ProcedureNode.cs" />
+    <Compile Include="VBA\Nodes\ParameterNode.cs" />
+    <Compile Include="VBA\Nodes\TypeNode.cs" />
+    <Compile Include="VBA\Nodes\VBProjectParseResult.cs" />
+    <Compile Include="VBA\ParseTreeListeners\ExposedMemberListener.cs" />
+    <Compile Include="VBA\ParseTreeListeners\ProcedureNameListener.cs" />
+    <Compile Include="VBA\ParseTreeListeners\ObsoleteInstructionsListener.cs" />
+    <Compile Include="VBA\ParseTreeListeners\ModuleOptionsListener.cs" />
+    <Compile Include="VBA\ParseTreeListeners\DeclarationListener.cs" />
+    <Compile Include="VBA\ParseTreeListeners\PublicSubListener.cs" />
+    <Compile Include="VBA\ParseTreeListeners\IExtensionListener.cs" />
+    <Compile Include="VBA\IRubberduckParser.cs" />
+    <Compile Include="VBA\Nodes\CommentNode.cs" />
+    <Compile Include="VBA\Nodes\IdentifierNode.cs" />
+    <Compile Include="VBA\Nodes\INode.cs" />
+    <Compile Include="VBA\Nodes\ModuleNode.cs" />
+    <Compile Include="VBA\Nodes\Node.cs" />
+    <Compile Include="VBA\Nodes\VBAccessibility.cs" />
+    <Compile Include="VBA\Nodes\VBComponentParseResult.cs" />
+    <Compile Include="VBA\ParserRuleContextExtensions.cs" />
+    <Compile Include="VBA\AntlrExtensions.cs" />
+    <Compile Include="VBA\ParseTreeListeners\ProcedureListener.cs" />
+    <Compile Include="VBA\ParseTreeListeners\VariableReferencesListener.cs" />
+    <Compile Include="VBA\ParseTreeListeners\TreeViewListener.cs" />
+    <Compile Include="VBA\ParseTreeListeners\VariableAssignmentListener.cs" />
+    <Compile Include="VBA\ParseTreeListeners\VariableUsageListener.cs" />
+    <Compile Include="VBA\QualifiedContext.cs" />
+    <Compile Include="VBA\RubberduckParser.cs" />
+    <Compile Include="VBA\ParseTreeListeners\NodeBuildingListener.cs" />
+    <Compile Include="VBA\Grammar\VBListenerBase.cs" />
+    <Compile Include="VBA\Grammar\IVBBaseVisitor.cs" />
+    <Compile Include="VBA\Grammar\VBLexer.cs" />
+    <Compile Include="VBA\Grammar\IVBListener.cs" />
+    <Compile Include="VBA\Grammar\VBParser.cs" />
+    <Compile Include="VBA\Grammar\IVBVisitor.cs" />
     <Compile Include="Config\IConfigurationService.cs" />
+    <Compile Include="Extensions\CodeModuleExtensions.cs" />
+    <Compile Include="Extensions\VBComponentsExtensions.cs" />
+    <Compile Include="SourceControl\GitProvider.cs" />
+    <Compile Include="SourceControl\ISourceControlProvider.cs" />
+    <Compile Include="SourceControl\SourceControlException.cs" />
+    <Compile Include="SourceControl\SourceControlProviderBase.cs" />
     <Compile Include="UI\Settings\ITodoSettingsView.cs" />
+    <Compile Include="UI\SourceControl\GitView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\SourceControl\GitView.Designer.cs">
+      <DependentUpon>GitView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="VBA\WalkerCancelledException.cs" />
     <Compile Include="VBEHost\AccessApp.cs" />
     <Compile Include="Config\ConfigurationLoader.cs" />
     <Compile Include="Config\UserSettings.cs" />
@@ -102,12 +376,7 @@
     <Compile Include="Inspections\VariableTypeNotDeclaredInspectionResult.cs" />
     <Compile Include="VBEHost\PowerPointApp.cs" />
     <Compile Include="VBEHost\PublisherApp.cs" />
-    <Compile Include="Refactoring\MenuIcons.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>MenuIcons.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Reflection\VBComponentExtensions.cs" />
+    <Compile Include="VBA\VBComponentExtensions.cs" />
     <Compile Include="ToDoItems\TaskPriority.cs" />
     <Compile Include="UI\AboutWindow.cs">
       <SubType>Form</SubType>
@@ -124,7 +393,6 @@
     <Compile Include="UI\CodeExplorer\CodeExplorerWindow.Designer.cs">
       <DependentUpon>CodeExplorerWindow.cs</DependentUpon>
     </Compile>
-    <Compile Include="UI\CodeExplorer\SyntaxTreeNodeClickEventArgs.cs" />
     <Compile Include="UI\CodeInspections\CodeInspectionResultGridViewItem.cs" />
     <Compile Include="UI\CodeInspections\CodeInspectionsDockablePresenter.cs" />
     <Compile Include="UI\CodeInspections\CodeInspectionsMenu.cs" />
@@ -135,7 +403,7 @@
     <Compile Include="UI\CodeInspections\CodeInspectionsWindow.Designer.cs">
       <DependentUpon>CodeInspectionsWindow.cs</DependentUpon>
     </Compile>
-    <Compile Include="UI\CodeInspections\NavigateCodeIssueEventArgs.cs" />
+    <Compile Include="UI\NavigateCodeEventArgs.cs" />
     <Compile Include="UI\CodeInspections\QuickFixEventArgs.cs" />
     <Compile Include="UI\DockablePresenterBase.cs" />
     <Compile Include="Config\Configuration.cs" />
@@ -149,8 +417,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Refactoring\ExtractMethodRefactoring.cs" />
-    <Compile Include="Refactoring\IRefactoring.cs" />
     <Compile Include="Reflection\Attributes.cs" />
     <Compile Include="Extensions\CodePaneExtensions.cs" />
     <Compile Include="Reflection\Member.cs" />
@@ -187,67 +453,17 @@
     <Compile Include="UnitTesting\NewTestMethodCommand.cs" />
     <Compile Include="UnitTesting\TestOutcome.cs" />
     <Compile Include="UnitTesting\TestResult.cs" />
-    <Compile Include="VBA\AssignmentNode.cs" />
-    <Compile Include="VBA\CommentNode.cs" />
-    <Compile Include="VBA\Grammar\AssignmentSyntax.cs" />
-    <Compile Include="VBA\ModuleNode.cs" />
-    <Compile Include="Reflection\VbProjectExtensions.cs" />
     <Compile Include="Reflection\ProjectComponent.cs" />
     <Compile Include="UI\SubClassingWindowEventArgs.cs" />
     <Compile Include="UI\UnitTesting\SelectedTestEventArgs.cs" />
     <Compile Include="UI\UnitTesting\TestExplorerItem.cs" />
     <Compile Include="UI\UnitTesting\TestResultExtensions.cs" />
-    <Compile Include="VBA\CodeBlockNode.cs" />
-    <Compile Include="VBA\ConstDeclarationNode.cs" />
-    <Compile Include="VBA\DoLoopNode.cs" />
-    <Compile Include="VBA\EnumMemberNode.cs" />
-    <Compile Include="VBA\EnumNode.cs" />
-    <Compile Include="VBA\Expression.cs" />
-    <Compile Include="VBA\ExpressionNode.cs" />
-    <Compile Include="VBA\ForEachLoopNode.cs" />
-    <Compile Include="VBA\ForLoopNode.cs" />
-    <Compile Include="VBA\Grammar\DeclarationSyntax.cs" />
-    <Compile Include="VBA\Grammar\DoLoopSyntax.cs" />
-    <Compile Include="VBA\Grammar\EnumMemberSyntax.cs" />
-    <Compile Include="VBA\Grammar\EnumSyntax.cs" />
-    <Compile Include="VBA\Grammar\ForEachLoopSyntax.cs" />
-    <Compile Include="VBA\Grammar\ForLoopSyntax.cs" />
-    <Compile Include="VBA\Grammar\IfBlockSyntax.cs" />
-    <Compile Include="VBA\Grammar\LabelSyntax.cs" />
-    <Compile Include="VBA\Grammar\OptionSyntax.cs" />
-    <Compile Include="VBA\Grammar\ProcedureSyntax.cs" />
-    <Compile Include="VBA\Grammar\SyntaxType.cs" />
-    <Compile Include="VBA\Grammar\TypeConversionSyntax.cs" />
-    <Compile Include="VBA\Grammar\UserDefinedTypeMemberSyntax.cs" />
-    <Compile Include="VBA\Grammar\UserDefinedTypeSyntax.cs" />
-    <Compile Include="VBA\IdentifierNode.cs" />
-    <Compile Include="VBA\IfBlockNode.cs" />
-    <Compile Include="VBA\Instruction.cs" />
-    <Compile Include="VBA\LabelNode.cs" />
-    <Compile Include="VBA\LogicalCodeLine.cs" />
-    <Compile Include="VBA\DeclarationNode.cs" />
-    <Compile Include="VBA\Grammar\ISyntax.cs" />
-    <Compile Include="VBA\Grammar\StringExtensions.cs" />
-    <Compile Include="VBA\Grammar\VBAGrammar.cs" />
-    <Compile Include="VBA\Identifier.cs" />
-    <Compile Include="VBA\Operation.cs" />
-    <Compile Include="VBA\Operator.cs" />
-    <Compile Include="VBA\OperatorType.cs" />
-    <Compile Include="VBA\ParameterNode.cs" />
-    <Compile Include="VBA\Parser.cs" />
-    <Compile Include="VBA\ProcedureKind.cs" />
-    <Compile Include="VBA\ProcedureNode.cs" />
-    <Compile Include="VBA\Grammar\ReservedKeywords.Designer.cs">
+    <Compile Include="VBA\StringExtensions.cs" />
+    <Compile Include="VBA\Tokens.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>ReservedKeywords.resx</DependentUpon>
+      <DependentUpon>Tokens.resx</DependentUpon>
     </Compile>
-    <Compile Include="VBA\Grammar\SyntaxBase.cs" />
-    <Compile Include="VBA\SyntaxTreeNode.cs" />
-    <Compile Include="VBA\TypeConversionNode.cs" />
-    <Compile Include="VBA\UserDefinedTypeMemberNode.cs" />
-    <Compile Include="VBA\UserDefinedTypeNode.cs" />
-    <Compile Include="VBA\VariableDeclarationNode.cs" />
     <Compile Include="UI\RubberduckMenu.cs" />
     <Compile Include="ToDoItems\ToDoItem.cs" />
     <Compile Include="UI\ToDoItems\ToDoItemsMenu.cs" />
@@ -270,7 +486,6 @@
     <Compile Include="UnitTesting\NewUnitTestModuleCommand.cs" />
     <Compile Include="UnitTesting\ProjectTestExtensions.cs" />
     <Compile Include="UnitTesting\TestMethod.cs" />
-    <Compile Include="UnitTesting\TestEngine.cs" />
     <Compile Include="UI\RefactorMenu.cs" />
     <Compile Include="UI\UnitTesting\TestExplorerWindow.cs">
       <SubType>UserControl</SubType>
@@ -305,7 +520,7 @@
     <COMReference Include="Microsoft.Office.Interop.Outlook">
       <Guid>{00062FFF-0000-0000-C000-000000000046}</Guid>
       <VersionMajor>9</VersionMajor>
-      <VersionMinor>5</VersionMinor>
+      <VersionMinor>3</VersionMinor>
       <Lcid>0</Lcid>
       <WrapperTool>primary</WrapperTool>
       <Isolated>False</Isolated>
@@ -314,18 +529,9 @@
     <COMReference Include="Microsoft.Office.Interop.PowerPoint">
       <Guid>{91493440-5A91-11CF-8700-00AA0060263B}</Guid>
       <VersionMajor>2</VersionMajor>
-      <VersionMinor>11</VersionMinor>
+      <VersionMinor>9</VersionMinor>
       <Lcid>0</Lcid>
       <WrapperTool>primary</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
-    <COMReference Include="Microsoft.Office.Interop.Publisher">
-      <Guid>{0002123C-0000-0000-C000-000000000046}</Guid>
-      <VersionMajor>2</VersionMajor>
-      <VersionMinor>2</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
       <Isolated>False</Isolated>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
@@ -362,10 +568,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>InspectionNames.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="Refactoring\MenuIcons.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>MenuIcons.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
     <EmbeddedResource Include="UI\AboutWindow.resx">
       <DependentUpon>AboutWindow.cs</DependentUpon>
     </EmbeddedResource>
@@ -380,6 +582,9 @@
     <EmbeddedResource Include="UI\CodeInspections\CodeInspectionsWindow.resx">
       <DependentUpon>CodeInspectionsWindow.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="UI\Refactorings\ExtractMethod\ExtractMethodDialog.resx">
+      <DependentUpon>ExtractMethodDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="UI\Settings\CodeInspectionControl.resx">
       <DependentUpon>CodeInspectionControl.cs</DependentUpon>
     </EmbeddedResource>
@@ -392,9 +597,15 @@
     <EmbeddedResource Include="UI\Settings\TodoListSettingsUserControl.resx">
       <DependentUpon>TodoListSettingsUserControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="VBA\Grammar\ReservedKeywords.resx">
+    <EmbeddedResource Include="UI\SourceControl\GitView.resx">
+      <DependentUpon>GitView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\SourceControl\SourceControlPanel.resx">
+      <DependentUpon>SourceControlPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="VBA\Tokens.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>ReservedKeywords.Designer.cs</LastGenOutput>
+      <LastGenOutput>Tokens.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\ToDoItems\ToDoExplorerWindow.resx">
       <DependentUpon>ToDoExplorerWindow.cs</DependentUpon>
@@ -404,17 +615,18 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="Resources\rubberduck.config" />
-    <None Include="Resources\tick-circle.png" />
+    <None Include="VBA\Grammar\VB.g4">
+      <Generator>MSBuild:Compile</Generator>
+      <CustomToolNamespace>Rubberduck.VBA.Grammar</CustomToolNamespace>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\minus-circle.png" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\exclamation-circle.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\question-white.png" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\arrow-circle-double.png" />
@@ -424,21 +636,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\arrow-repeat.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\flask--arrow.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\flask--plus.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\flask--exclamation.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\flask.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\flask-empty.png" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\arrow-repeat1.png" />
@@ -451,6 +648,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\DataSources\" />
+    <Folder Include="Refactoring\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\rubberduck_adsize.png" />
@@ -459,6 +657,19 @@
     <None Include="Resources\plus-circle.png" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Resources\Rubberduck\RD-AboutWindow.png" />
+    <Content Include="Resources\Rubberduck\RD-InstallBanner.bmp" />
+    <Content Include="Resources\Rubberduck\RD-InstallWindow.bmp" />
+    <None Include="Resources\RD-AboutWindow.png" />
+    <None Include="Resources\twitter_circle_black-512.png" />
+    <None Include="Resources\RD-InstallWindow.png" />
+    <None Include="Resources\minus-circle1.png" />
+    <None Include="Resources\plus-circle1.png" />
+    <None Include="Resources\question-white.png" />
+    <None Include="Resources\tick-circle.png" />
+    <None Include="Resources\navigation-180.png" />
+    <None Include="Resources\navigation.png" />
+    <None Include="Resources\tick.png" />
     <None Include="Resources\Step-RunTest_8814_32.bmp" />
     <None Include="Resources\Warning.bmp" />
     <None Include="Resources\Serious.bmp" />
@@ -473,6 +684,40 @@
     <None Include="Resources\Expand_large.bmp" />
     <None Include="Resources\112_LeftArrowLong_Blue_16x16_72.png" />
     <None Include="Resources\112_RightArrowLong_Blue_16x16_72.png" />
+    <None Include="Resources\cross-circle.png" />
+    <None Include="Resources\exclamation-diamond.png" />
+    <None Include="Resources\arrow.png" />
+    <None Include="Resources\document-copy.png" />
+    <None Include="Resources\information-white.png" />
+    <None Include="Resources\exclamation-white.png" />
+    <None Include="Resources\exclamation.png" />
+    <None Include="Resources\information.png" />
+    <None Include="Resources\flask.png" />
+    <None Include="Resources\flask--arrow.png" />
+    <None Include="Resources\flask--exclamation.png" />
+    <None Include="Resources\flask--plus.png" />
+    <None Include="Resources\flask-empty.png" />
+    <None Include="Resources\creative-commons.png" />
+    <None Include="Resources\gear.png" />
+    <None Include="Resources\control-000-small.png" />
+    <None Include="Resources\git.png" />
+    <None Include="Resources\arrow-merge-090.png" />
+    <None Include="Resources\arrow-split.png" />
+    <None Include="Resources\drive-download.png" />
+    <None Include="Resources\drive-upload.png" />
+    <None Include="Resources\arrow-step.png" />
+    <None Include="Resources\github-alt.png" />
+    <None Include="Resources\icon-github.png" />
+    <None Include="Resources\arrow-branch-090.png" />
+    <None Include="Resources\folder-horizontal-open.png" />
+    <None Include="Resources\folder-horizontal.png" />
+    <None Include="Resources\application-resize.png" />
+    <None Include="Resources\light-bulb-code.png" />
+    <Content Include="Ducky.ico" />
+    <None Include="Resources\facebook-icon.png" />
+    <None Include="Resources\github_circle_black-128.png" />
+    <None Include="Resources\facebook-circle-256.png" />
+    <None Include="Resources\google-circle-512.png" />
     <Content Include="Resources\Microsoft\AddClass_5561_32.bmp" />
     <Content Include="Resources\Microsoft\AddEvent_5539_32.bmp" />
     <Content Include="Resources\Microsoft\AddForm_369_32.bmp" />
@@ -589,6 +834,25 @@
     <Content Include="Resources\Microsoft\VSProject_reference.bmp" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Antlr4.4.3.0\build\Antlr4.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.4.3.0\build\Antlr4.props'))" />
+    <Error Condition="!Exists('..\packages\Antlr4.4.3.0\build\Antlr4.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.4.3.0\build\Antlr4.targets'))" />
+    <Error Condition="!Exists('..\packages\LibGit2Sharp.0.21.0.176\build\net40\LibGit2Sharp.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\LibGit2Sharp.0.21.0.176\build\net40\LibGit2Sharp.props'))" />
+  </Target>
+  <Import Project="..\packages\Antlr4.4.3.0\build\Antlr4.targets" Condition="Exists('..\packages\Antlr4.4.3.0\build\Antlr4.targets')" />
+  <PropertyGroup>
+    <PostBuildEvent>if $(ConfigurationName) == Release (
+    Copy $(TargetDir)\NativeBinaries\x86\git2-e0902fb.dll $(TargetDir)
+)
+
+if $(ConfigurationName) == Release64 (
+    Copy $(TargetDir)\NativeBinaries\amd64\git2-e0902fb.dll $(TargetDir)
+)
+</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

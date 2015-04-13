@@ -8,11 +8,20 @@ using Rubberduck.UnitTesting;
 
 namespace Rubberduck.UI.UnitTesting
 {
-    [ComVisible(false)]
-    public partial class TestExplorerWindow : UserControl
+    public partial class TestExplorerWindow : UserControl, IDockableUserControl
     {
         private BindingList<TestExplorerItem> _allTests;
         private IList<TestExplorerItem> _playList;
+
+        public string ClassId
+        {
+            get { return "9CF1392A-2DC9-48A6-AC0B-E601A9802608"; }
+        }
+
+        public string Caption
+        {
+            get { return "Test Explorer"; }
+        }
 
         public TestExplorerWindow()
         {
@@ -20,7 +29,7 @@ namespace Rubberduck.UI.UnitTesting
 
             _allTests = new BindingList<TestExplorerItem>();
             _playList = new List<TestExplorerItem>();
-            
+
             InitializeGrid();
             RegisterUIEvents();
         }
@@ -28,7 +37,7 @@ namespace Rubberduck.UI.UnitTesting
         private void InitializeGrid()
         {
             testOutputGridView.DataSource = _allTests;
-            var messageColumn = testOutputGridView.Columns["QuickFixMessage"];
+            var messageColumn = testOutputGridView.Columns["Message"];
             if (messageColumn != null)
             {
                 messageColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
@@ -76,7 +85,8 @@ namespace Rubberduck.UI.UnitTesting
                                                                           .Cast<DataGridViewRow>()
                                                                           .Select(row => row.DataBoundItem as TestExplorerItem)
                                                                           .Select(item => item.GetTestMethod())
-                                                                          .Contains(test.GetTestMethod()));
+                                                                          .Contains(test.GetTestMethod()))
+                                                                          .ToList(); //ToList forces immediate execution so clearing the gui of previous results won't cause us to lose the selection.
 
                 handler(this, new SelectedTestEventArgs(selection));
             }
@@ -151,7 +161,7 @@ namespace Rubberduck.UI.UnitTesting
             testOutputGridView.DataSource = _allTests;
         }
 
-        private int _completedCount; 
+        private int _completedCount;
         private void UpdateProgress()
         {
             UpdateCompletedTestsLabels();
@@ -167,6 +177,7 @@ namespace Rubberduck.UI.UnitTesting
 
         private void UpdateCompletedTestsLabels()
         {
+            TotalElapsedMilisecondsLabel.Text = string.Format("{0} ms", _playList.Sum(item => item.GetDuration() == TimeSpan.Zero ? 0 : item.GetDuration().Milliseconds));
             passedTestsLabel.Text = string.Format("{0} Passed", _playList.Count(item => item.Outcome == TestOutcome.Succeeded.ToString()));
             failedTestsLabel.Text = string.Format("{0} Failed", _playList.Count(item => item.Outcome == TestOutcome.Failed.ToString()));
             inconclusiveTestsLabel.Text = string.Format("{0} Inconclusive", _playList.Count(item => item.Outcome == TestOutcome.Inconclusive.ToString()));
@@ -179,7 +190,7 @@ namespace Rubberduck.UI.UnitTesting
                                                  && item.MethodName == test.MethodName);
         }
 
-        public void Refresh(IDictionary<TestMethod,TestResult> tests)
+        public void Refresh(IDictionary<TestMethod, TestResult> tests)
         {
             _allTests = new BindingList<TestExplorerItem>(tests.Select(test => new TestExplorerItem(test.Key, test.Value)).ToList());
             testOutputGridView.DataSource = _allTests;
@@ -191,7 +202,7 @@ namespace Rubberduck.UI.UnitTesting
             SetPlayList(tests.ToDictionary(test => test, test => null as TestResult));
         }
 
-        public void SetPlayList(IDictionary<TestMethod,TestResult> tests)
+        public void SetPlayList(IDictionary<TestMethod, TestResult> tests)
         {
             _playList = tests.Select(test => new TestExplorerItem(test.Key, test.Value)).ToList();
             UpdateCompletedTestsLabels();
@@ -206,6 +217,11 @@ namespace Rubberduck.UI.UnitTesting
         public event EventHandler<SelectedTestEventArgs> OnGoToSelectedTest;
         private void GridCellDoubleClicked(object sender, DataGridViewCellEventArgs e)
         {
+            if (e.RowIndex < 0)
+            {
+                return;
+            }
+
             var handler = OnGoToSelectedTest;
             if (handler != null && e.RowIndex >= 0)
             {
@@ -240,6 +256,6 @@ namespace Rubberduck.UI.UnitTesting
 
             UpdateProgress();
             testOutputGridView.Refresh();
-        }    
+        }
     }
 }

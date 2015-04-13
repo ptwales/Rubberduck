@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
+using Rubberduck.VBEHost;
 
 namespace Rubberduck.UnitTesting
 {
-    [ComVisible(false)]
     public class TestMethod : IEquatable<TestMethod>
     {
         private readonly ICollection<TestResult> _assertResults = new List<TestResult>();
@@ -32,6 +31,8 @@ namespace Rubberduck.UnitTesting
 
         public TestResult Run()
         {
+            _assertResults.Clear(); //clear previous results to account for changes being made
+
             TestResult result;
             var duration = new TimeSpan();
             try

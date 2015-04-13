@@ -28,10 +28,13 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ToDoExplorerWindow));
             this.todoItemsGridView = new System.Windows.Forms.DataGridView();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.refreshButton = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.configureButton = new System.Windows.Forms.ToolStripButton();
             this.panel1 = new System.Windows.Forms.Panel();
             ((System.ComponentModel.ISupportInitialize)(this.todoItemsGridView)).BeginInit();
             this.toolStrip1.SuspendLayout();
@@ -42,20 +45,26 @@
             // 
             this.todoItemsGridView.AllowUserToAddRows = false;
             this.todoItemsGridView.AllowUserToDeleteRows = false;
+            this.todoItemsGridView.AllowUserToOrderColumns = true;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.Lavender;
+            this.todoItemsGridView.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
             this.todoItemsGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.todoItemsGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.todoItemsGridView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.todoItemsGridView.Location = new System.Drawing.Point(0, 0);
             this.todoItemsGridView.Name = "todoItemsGridView";
             this.todoItemsGridView.ReadOnly = true;
+            this.todoItemsGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.todoItemsGridView.Size = new System.Drawing.Size(319, 206);
             this.todoItemsGridView.TabIndex = 0;
+            this.todoItemsGridView.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.ColumnHeaderMouseClicked);
             // 
             // toolStrip1
             // 
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.refreshButton,
-            this.toolStripSeparator1});
+            this.toolStripSeparator1,
+            this.configureButton});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(319, 25);
@@ -65,7 +74,7 @@
             // refreshButton
             // 
             this.refreshButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.refreshButton.Image = global::Rubberduck.Properties.Resources.Refresh;
+            this.refreshButton.Image = ((System.Drawing.Image)(resources.GetObject("refreshButton.Image")));
             this.refreshButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.refreshButton.Name = "refreshButton";
             this.refreshButton.Size = new System.Drawing.Size(23, 22);
@@ -75,6 +84,15 @@
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(6, 25);
+            // 
+            // configureButton
+            // 
+            this.configureButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.configureButton.Image = global::Rubberduck.Properties.Resources.gear;
+            this.configureButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.configureButton.Name = "configureButton";
+            this.configureButton.Size = new System.Drawing.Size(23, 22);
+            this.configureButton.Visible = false;
             // 
             // panel1
             // 
@@ -109,6 +127,7 @@
         private System.Windows.Forms.ToolStripButton refreshButton;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.ToolStripButton configureButton;
 
 
     }

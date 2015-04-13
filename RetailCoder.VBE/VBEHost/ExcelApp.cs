@@ -1,19 +1,17 @@
-﻿using System.Runtime.InteropServices;
-using Microsoft.Office.Interop.Excel;
+﻿using Microsoft.Office.Interop.Excel;
 
-namespace Rubberduck
+namespace Rubberduck.VBEHost
 {
-    [ComVisible(false)]
     public class ExcelApp : HostApplicationBase<Application>
     {
         public ExcelApp() : base("Excel") { }
 
-        public override void Run(string target)
+        public override void Run(string projectName, string moduleName, string methodName)
         {
-            base._application.Run(target);
+            Application.Run(GenerateMethodCall(projectName, moduleName, methodName));
         }
 
-        protected override string GenerateFullyQualifiedName(string projectName, string moduleName, string methodName)
+        protected override string GenerateMethodCall(string projectName, string moduleName, string methodName)
         {
             return string.Concat(projectName, ".", moduleName, ".", methodName);
         }

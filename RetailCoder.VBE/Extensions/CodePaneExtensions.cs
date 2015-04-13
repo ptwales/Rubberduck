@@ -1,17 +1,19 @@
 ﻿using System.Runtime.InteropServices;
 using Microsoft.Vbe.Interop;
 using System;
+using Rubberduck.Inspections;
 using Rubberduck.UI;
 
 namespace Rubberduck.Extensions
 {
-    /// <summary>   VBE Code Pane extensions. </summary>
-    [ComVisible(false)]
+    /// <summary>
+    /// VBE Code Pane extension methods. 
+    /// </summary>
     public static class CodePaneExtensions
     {
         /// <summary>   A CodePane extension method that gets the current selection. </summary>
         /// <returns>   The selection. </returns>
-        public static Selection GetSelection(this CodePane code)
+        public static QualifiedSelection GetSelection(this CodePane code)
         {
             int startLine;
             int endLine;
@@ -19,13 +21,23 @@ namespace Rubberduck.Extensions
             int endColumn;
 
             code.GetSelection(out startLine, out startColumn, out endLine, out endColumn);
-            return new Selection(startLine, startColumn, endLine, endColumn);
+
+            if (endLine > startLine && endColumn == 1)
+            {
+                endLine--;
+                endColumn = code.CodeModule.get_Lines(endLine, 1).Length;
+            }
+
+            var selection = new Selection(startLine, startColumn, endLine, endColumn);
+            return new QualifiedSelection(code.CodeModule.Parent.QualifiedName(), selection);
         }
 
-        /// <summary>   A CodePane extension method that selected procedure. </summary>
+        /// <summary>
+        /// Returns a <see cref="Selection"/> representing the position 
+        /// </summary>
         ///
         /// <param name="selection">    The selection. </param>
-        /// <returns>   A Selection object representing the procedure the cursor is currently in. </returns>
+        /// <returns>   A QualifiedSelection object representing the procedure the cursor is currently in. </returns>
         public static Selection SelectedProcedure(this CodePane code, Selection selection)
         {
             vbext_ProcKind kind;

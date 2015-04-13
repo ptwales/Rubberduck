@@ -1,115 +1,154 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using CommandBarButtonClickEvent = Microsoft.Office.Core._CommandBarButtonEvents_ClickEventHandler;
 using Microsoft.Office.Core;
 using Microsoft.Vbe.Interop;
 using Rubberduck.Config;
 using Rubberduck.Inspections;
+using Rubberduck.UI.CodeExplorer;
 using Rubberduck.UI.CodeInspections;
+using Rubberduck.UI.Settings;
+using Rubberduck.UI.SourceControl;
 using Rubberduck.UI.ToDoItems;
 using Rubberduck.UI.UnitTesting;
-using Rubberduck.UI.CodeExplorer;
+using Rubberduck.UnitTesting;
 using Rubberduck.VBA;
+using CommandBarButtonClickEvent = Microsoft.Office.Core._CommandBarButtonEvents_ClickEventHandler;
 
 namespace Rubberduck.UI
 {
-    [ComVisible(false)]
-    public class RubberduckMenu : IDisposable
+    public class RubberduckMenu : Menu
     {
-        private readonly VBE _vbe;
-
-        private readonly TestMenu _testMenu; // todo: implement as DockablePresenter.
+        private readonly TestMenu _testMenu;
         private readonly ToDoItemsMenu _todoItemsMenu;
         private readonly CodeExplorerMenu _codeExplorerMenu;
         private readonly CodeInspectionsMenu _codeInspectionsMenu;
-        //private readonly RefactorMenu _refactorMenu; // todo: implement refactoring
+        private readonly RefactorMenu _refactorMenu;
         private readonly IConfigurationService _configService;
 
-        public RubberduckMenu(VBE vbe, AddIn addIn, IConfigurationService configService, Parser parser, IEnumerable<IInspection> inspections)
+        //These need to stay in scope for their click events to fire. (32-bit only?)
+        // ReSharper disable once NotAccessedField.Local
+        private CommandBarButton _about;
+        // ReSharper disable once NotAccessedField.Local
+        private CommandBarButton _settings;
+        // ReSharper disable once NotAccessedField.Local
+        private CommandBarButton _sourceControl;
+
+        public RubberduckMenu(VBE vbe, AddIn addIn, IConfigurationService configService, IRubberduckParser parser, IInspector inspector)
+            : base(vbe, addIn)
         {
-            _vbe = vbe;
             _configService = configService;
 
-            _testMenu = new TestMenu(_vbe, addIn);
-            _codeExplorerMenu = new CodeExplorerMenu(_vbe, addIn, parser);
+            var testExplorer = new TestExplorerWindow();
+            var testEngine = new TestEngine();
+            var testPresenter = new TestExplorerDockablePresenter(vbe, addIn, testExplorer, testEngine);
+            _testMenu = new TestMenu(vbe, addIn, testExplorer, testPresenter);
+
+            var codeExplorer = new CodeExplorerWindow();
+            var codePresenter = new CodeExplorerDockablePresenter(parser, vbe, addIn, codeExplorer);
+            codePresenter.RunAllTests += codePresenter_RunAllTests;
+            codePresenter.RunInspections += codePresenter_RunInspections;
+            _codeExplorerMenu = new CodeExplorerMenu(vbe, addIn, codeExplorer, codePresenter);
 
             var todoSettings = configService.LoadConfiguration().UserSettings.ToDoListSettings;
-            _todoItemsMenu = new ToDoItemsMenu(_vbe, addIn, todoSettings, parser);
+            var todoExplorer = new ToDoExplorerWindow();
+            var todoPresenter = new ToDoExplorerDockablePresenter(parser, todoSettings.ToDoMarkers, vbe, addIn, todoExplorer);
+            _todoItemsMenu = new ToDoItemsMenu(vbe, addIn, todoExplorer, todoPresenter);
 
-            _codeInspectionsMenu = new CodeInspectionsMenu(_vbe, addIn, parser, inspections);
-            //_refactorMenu = new RefactorMenu(_vbe, addIn);
+            var inspectionExplorer = new CodeInspectionsWindow();
+            var inspectionPresenter = new CodeInspectionsDockablePresenter(inspector, vbe, addIn, inspectionExplorer);
+            _codeInspectionsMenu = new CodeInspectionsMenu(vbe, addIn, inspectionExplorer, inspectionPresenter);
 
+            _refactorMenu = new RefactorMenu(IDE, AddIn, parser);
         }
 
-        public void Dispose()
+        private void codePresenter_RunInspections(object sender, System.EventArgs e)
         {
-            _testMenu.Dispose();
-            //_refactorMenu.Dispose();
+            _codeInspectionsMenu.Inspect();
         }
 
-        private CommandBarButton _about;
-        private CommandBarButton _settings;
+        private void codePresenter_RunAllTests(object sender, System.EventArgs e)
+        {
+            _testMenu.RunAllTests();
+        }
 
         public void Initialize()
         {
-            var menuBarControls = _vbe.CommandBars[1].Controls;
-            var beforeIndex = FindMenuInsertionIndex(menuBarControls);
+            const int windowMenuId = 30009;
+            var menuBarControls = IDE.CommandBars[1].Controls;
+            var beforeIndex = FindMenuInsertionIndex(menuBarControls, windowMenuId);
             var menu = menuBarControls.Add(MsoControlType.msoControlPopup, Before: beforeIndex, Temporary: true) as CommandBarPopup;
             Debug.Assert(menu != null, "menu != null");
 
             menu.Caption = "Ru&bberduck";
 
             _testMenu.Initialize(menu.Controls);
-            _codeExplorerMenu.Initialize(menu.Controls);
-            //_refactorMenu.Initialize(menu.Controls);
-            _todoItemsMenu.Initialize(menu.Controls);
-            _codeInspectionsMenu.Initialize(menu.Controls);
+            _codeExplorerMenu.Initialize(menu);
+            _refactorMenu.Initialize(menu.Controls);
+            _todoItemsMenu.Initialize(menu);
+            _codeInspectionsMenu.Initialize(menu);
 
-            _settings = AddButton(menu, "&Options", true, new CommandBarButtonClickEvent(OnOptionsClick));
-            _about = AddButton(menu, "&About...", true, new CommandBarButtonClickEvent(OnAboutClick));
-            
+            // note: disabled for 1.21 release (RepositoryNotFoundException on click)
+            //_sourceControl = AddButton(menu, "Source Control", false, OnSourceControlClick);
+            _settings = AddButton(menu, "&Options", true, OnOptionsClick);
+            _about = AddButton(menu, "&About...", true, OnAboutClick);
         }
 
-        private CommandBarButton AddButton(CommandBarPopup parentMenu, string caption, bool beginGroup, CommandBarButtonClickEvent buttonClickHandler)
+        private void OnSourceControlClick(CommandBarButton Ctrl, ref bool CancelDefault)
         {
-            var button = parentMenu.Controls.Add(MsoControlType.msoControlButton, Temporary: true) as CommandBarButton;
-            button.Caption = caption;
-            button.BeginGroup = beginGroup;
-            button.Click += buttonClickHandler;
-
-            return button;
+            using (var window = new DummyGitView(IDE.ActiveVBProject))
+            {
+                window.ShowDialog();
+            }
         }
 
         private void OnOptionsClick(CommandBarButton Ctrl, ref bool CancelDefault)
         {
-            using (var window = new Settings.SettingsDialog(_configService))
+            using (var window = new _SettingsDialog(_configService))
             {
                 window.ShowDialog();
             }
         }
 
-        void OnAboutClick(CommandBarButton Ctrl, ref bool CancelDefault)
+        private void OnAboutClick(CommandBarButton Ctrl, ref bool CancelDefault)
         {
-            using (var window = new AboutWindow())
+            using (var window = new _AboutWindow())
             {
                 window.ShowDialog();
             }
         }
 
-        private int FindMenuInsertionIndex(CommandBarControls controls)
+        bool _disposed;
+        protected override void Dispose(bool disposing)
         {
-            for (var i = 1; i <= controls.Count; i++)
+            if (_disposed)
             {
-                // insert menu before "Window" built-in menu:
-                if (controls[i].BuiltIn && controls[i].Caption == "&Window")
+                return;
+            }
+
+            if (disposing)
+            {
+                if (_todoItemsMenu != null)
                 {
-                    return i;
+                    _todoItemsMenu.Dispose();
+                }
+
+                if (_refactorMenu != null)
+                {
+                    _refactorMenu.Dispose();
+                }
+
+                if (_codeExplorerMenu != null)
+                {
+                    _codeExplorerMenu.Dispose();
+                }
+                if (_testMenu != null)
+                {
+                    _testMenu.Dispose();
                 }
             }
 
-            return controls.Count;
+            _disposed = true;
+
+            base.Dispose(disposing);
         }
     }
 }

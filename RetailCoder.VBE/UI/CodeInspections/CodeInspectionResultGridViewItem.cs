@@ -10,22 +10,22 @@ using Rubberduck.Properties;
 
 namespace Rubberduck.UI.CodeInspections
 {
-    [ComVisible(false)]
     public class CodeInspectionResultGridViewItem
     {
-        public CodeInspectionResultGridViewItem(CodeInspectionResultBase result)
+        public CodeInspectionResultGridViewItem(ICodeInspectionResult result)
         {
             _item = result;
             _severity = GetSeverityIcon(result.Severity);
-            _project = result.Node.Instruction.Line.ProjectName;
-            _component = result.Node.Instruction.Line.ComponentName;
-            _selection = result.Node.Instruction.Selection;
+            _selection = result.QualifiedSelection;
             _issue = result.Name;
             _quickFix = FirstOrDefaultQuickFix(result.GetQuickFixes());
+
+            _project = _selection.QualifiedName.ProjectName;
+            _component = _selection.QualifiedName.ModuleName;
         }
 
-        private readonly CodeInspectionResultBase _item;
-        public CodeInspectionResultBase GetInspectionResultItem()
+        private readonly ICodeInspectionResult _item;
+        public ICodeInspectionResult GetInspectionResultItem()
         {
             return _item;
         }
@@ -40,10 +40,10 @@ namespace Rubberduck.UI.CodeInspections
             new Dictionary<CodeInspectionSeverity, Bitmap>
             {
                 { CodeInspectionSeverity.DoNotShow, null },
-                { CodeInspectionSeverity.Hint, Resources.Information },
-                { CodeInspectionSeverity.Suggestion, Resources.Alert },
-                { CodeInspectionSeverity.Warning, Resources.Warning },
-                { CodeInspectionSeverity.Error, Resources.Critical }
+                { CodeInspectionSeverity.Hint, Resources.information_white },
+                { CodeInspectionSeverity.Suggestion, Resources.information },
+                { CodeInspectionSeverity.Warning, Resources.exclamation },
+                { CodeInspectionSeverity.Error, Resources.cross_circle }
             };
 
         private Image GetSeverityIcon(CodeInspectionSeverity severity)
@@ -71,10 +71,10 @@ namespace Rubberduck.UI.CodeInspections
             get { return _component; }
         }
 
-        private readonly Selection _selection;
+        private readonly QualifiedSelection _selection;
         public int Line
         {
-            get { return _selection.StartLine; }
+            get { return _selection.Selection.StartLine; }
         }
 
         private readonly string _issue;

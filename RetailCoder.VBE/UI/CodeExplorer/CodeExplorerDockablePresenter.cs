@@ -1,35 +1,30 @@
-﻿using System.Collections;
-using System.Collections.Concurrent;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using Microsoft.Vbe.Interop;
+using Rubberduck.Extensions;
+using Rubberduck.Inspections;
+using Rubberduck.VBA;
+using Rubberduck.VBA.ParseTreeListeners;
 using System.Drawing;
-using System.IO.Packaging;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.Vbe.Interop;
-using Rubberduck.VBA;
-using Rubberduck.VBA.Grammar;
-using System;
-using Rubberduck.UI;
-using Rubberduck.Extensions;
+using Rubberduck.UnitTesting;
+using AddIn = Microsoft.Vbe.Interop.AddIn;
+using Font = System.Drawing.Font;
+using Selection = Rubberduck.Extensions.Selection;
 
 namespace Rubberduck.UI.CodeExplorer
 {
-    [ComVisible(false)]
     public class CodeExplorerDockablePresenter : DockablePresenterBase
     {
-        private readonly Parser _parser;
+        private readonly IRubberduckParser _parser;
         private CodeExplorerWindow Control { get { return UserControl as CodeExplorerWindow; } }
 
-        public CodeExplorerDockablePresenter(Parser parser, VBE vbe, AddIn addIn)
-            : base(vbe, addIn, new CodeExplorerWindow())
+        public CodeExplorerDockablePresenter(IRubberduckParser parser, VBE vbe, AddIn addIn, CodeExplorerWindow view)
+            : base(vbe, addIn, view)
         {
             _parser = parser;
-            Control.SolutionTree.Font = new Font(Control.SolutionTree.Font, FontStyle.Bold);
             RegisterControlEvents();
             RefreshExplorerTreeView();
             Control.SolutionTree.Refresh();
@@ -44,48 +39,100 @@ namespace Rubberduck.UI.CodeExplorer
 
             Control.RefreshTreeView += RefreshExplorerTreeView;
             Control.NavigateTreeNode += NavigateExplorerTreeNode;
-            Control.SolutionTree.AfterExpand += TreeViewAfterExpandNode;
-            Control.SolutionTree.AfterCollapse += TreeViewAfterCollapseNode;
+            Control.AddComponent += AddComponent;
+            Control.AddTestModule += AddTestModule;
+            Control.ToggleFolders += ToggleFolders;
+            Control.ShowDesigner += ShowDesigner;
+            Control.DisplayStyleChanged += DisplayStyleChanged;
+            Control.RunAllTests += ContextMenuRunAllTests;
+            Control.RunInspections += ContextMenuRunInspections;
         }
 
-        private void NavigateExplorerTreeNode(object sender, SyntaxTreeNodeClickEventArgs e)
+        public event EventHandler RunInspections;
+        private void ContextMenuRunInspections(object sender, EventArgs e)
         {
-            var instruction = e.Instruction;
-
-            var project = instruction.Line.ProjectName;
-            var component = instruction.Line.ComponentName;
-
-            var vbProject = VBE.VBProjects.Cast<VBProject>()
-                               .FirstOrDefault(p => p.Name == project);
-
-            VBComponent vbComponent = null;
-            if (vbProject != null)
+            var handler = RunInspections;
+            if (handler != null)
             {
-                vbComponent = vbProject.VBComponents.Cast<VBComponent>()
-                                       .FirstOrDefault(c => c.Name == component);
+                handler(this, EventArgs.Empty);
             }
+        }
 
-            if (vbComponent == null)
+        public event EventHandler RunAllTests;
+        private void ContextMenuRunAllTests(object sender, EventArgs e)
+        {
+            var handler = RunAllTests;
+            if (handler != null)
+            {
+                handler(this, EventArgs.Empty);
+            }
+        }
+
+        private void DisplayStyleChanged(object sender, EventArgs e)
+        {
+            RefreshExplorerTreeView();
+        }
+
+        private void AddTestModule(object sender, EventArgs e)
+        {
+            NewUnitTestModuleCommand.NewUnitTestModule(VBE);
+            RefreshExplorerTreeView();
+        }
+
+        private void ShowDesigner(object sender, System.EventArgs e)
+        {
+            var node = Control.SolutionTree.SelectedNode;
+            if (node != null && node.Tag != null)
+            {
+                var selection = (QualifiedSelection)node.Tag;
+                var module = VBE.FindCodeModules(selection.QualifiedName).FirstOrDefault();
+                if (module == null)
+                {
+                    return;
+                }
+
+                try
+                {
+                    module.Parent.DesignerWindow().Visible = true;
+                }
+                catch
+                {
+                    Control.ShowDesignerButton.Enabled = false;
+                }
+            }
+        }
+
+        private bool _showFolders = true;
+        private void ToggleFolders(object sender, System.EventArgs e)
+        {
+            _showFolders = !_showFolders;
+            RefreshExplorerTreeView();
+        }
+
+        private void AddComponent(object sender, AddComponentEventArgs e)
+        {
+            var project = VBE.ActiveVBProject;
+            if (project == null)
             {
                 return;
             }
 
-            var codePane = vbComponent.CodeModule.CodePane;
-            var selection = instruction.Selection;
-
-            if (selection.StartLine != 0)
-            {
-               codePane.SetSelection(selection);
-            }
+            project.VBComponents.Add(e.ComponentType);
+            RefreshExplorerTreeView();
         }
 
-        private void RefreshExplorerTreeView()
+        private void NavigateExplorerTreeNode(object sender, TreeNodeNavigateCodeEventArgs e)
         {
-            Control.SolutionTree.Nodes.Clear();
-            var projects = VBE.VBProjects.Cast<VBProject>().OrderBy(project => project.Name);
-            foreach (var vbProject in projects)
+            if (e.Selection.StartLine != 0)
             {
-                AddProjectNode(_parser.Parse(vbProject));
+                //hack: get around issue where a node's selection seems to ignore a procedure's (or enum's) signature
+                //todo: determiner if this "temp fix" is still needed.
+                var selection = new Selection(e.Selection.StartLine,
+                                                1,
+                                                e.Selection.EndLine,
+                                                e.Selection.EndColumn == 1 ? 0 : e.Selection.EndColumn //fixes off by one error when navigating the module
+                                              );
+                VBE.SetSelection(new QualifiedSelection(e.QualifiedName, selection));
             }
         }
 
@@ -94,285 +141,143 @@ namespace Rubberduck.UI.CodeExplorer
             RefreshExplorerTreeView();
         }
 
-        private void AddProjectNode(SyntaxTreeNode node)
+        private async void RefreshExplorerTreeView()
+        {
+            Control.SolutionTree.Nodes.Clear();
+            Control.ShowDesignerButton.Enabled = false;
+
+            var projects = VBE.VBProjects.Cast<VBProject>();
+            foreach (var vbProject in projects)
+            {
+                var project = vbProject;
+                await Task.Run(() =>
+                {
+                    var node = new TreeNode(project.Name + " (parsing...)");
+                    node.ImageKey = "Hourglass";
+                    node.SelectedImageKey = node.ImageKey;
+
+                    Control.Invoke((MethodInvoker)delegate
+                    {
+                        Control.SolutionTree.Nodes.Add(node);
+                        AddProjectNodes(project, node);
+                    });
+                });
+            }
+
+            Control.SolutionTree.BackColor = Control.SolutionTree.BackColor;
+        }
+
+        private void AddProjectNodes(VBProject project, TreeNode root)
         {
             var treeView = Control.SolutionTree;
-            var projectNode = new TreeNode();
-            projectNode.Text = node.Instruction.Line.ProjectName + new string(' ', 2);
-            projectNode.Tag = node.Instruction;
-            projectNode.ImageKey = "ClosedFolder";
-            treeView.BackColor = treeView.BackColor;
-
-            var moduleNodes = new ConcurrentBag<TreeNode>();
-            foreach(var module in node.ChildNodes)
+            Control.Invoke((MethodInvoker)async delegate
             {
-                var moduleNode = new TreeNode(((ModuleNode) module).Identifier.Name);
-                moduleNode.NodeFont = new Font(treeView.Font, FontStyle.Regular);
-                moduleNode.ImageKey = GetImageKeyForNode(module);
-                moduleNode.SelectedImageKey = moduleNode.ImageKey;
-                moduleNode.Tag = module.Instruction;
-
-                foreach (var member in module.ChildNodes)
+                root.Text = project.Name;
+                if (project.Protection == vbext_ProjectProtection.vbext_pp_locked)
                 {
-                    if (string.IsNullOrEmpty(member.Instruction.Value.Trim()))
-                    {
-                        // don't make a tree node for comments
-                        continue;
-                    }
-
-                    if (member.ChildNodes != null)
-                    {
-                        moduleNode.Nodes.Add(AddCodeBlockNode(member));
-                    }
+                    root.ImageKey = "Locked";
                 }
-                moduleNodes.Add(moduleNode);
-            }
-
-            projectNode.Nodes.AddRange(moduleNodes.ToArray());
-            treeView.Nodes.Add(projectNode);
+                else
+                {
+                    root.ImageKey = "ClosedFolder";
+                    var nodes = (await CreateModuleNodesAsync(project, treeView.Font)).ToArray();
+                    AddProjectFolders(project, root, nodes);
+                    root.Expand();
+                }
+            });
         }
 
-        private TreeNode AddCodeBlockNode(SyntaxTreeNode node)
+        private static readonly IDictionary<vbext_ComponentType, string> ComponentTypeIcons =
+            new Dictionary<vbext_ComponentType, string>
+            {
+                { vbext_ComponentType.vbext_ct_StdModule, "StandardModule"},
+                { vbext_ComponentType.vbext_ct_ClassModule, "ClassModule"},
+                { vbext_ComponentType.vbext_ct_Document, "OfficeDocument"},
+                { vbext_ComponentType.vbext_ct_ActiveXDesigner, "ClassModule"},
+                { vbext_ComponentType.vbext_ct_MSForm, "Form"}
+            };
+
+        private void AddProjectFolders(VBProject project, TreeNode root, TreeNode[] components)
         {
-            var codeBlockNode = new TreeNode(GetNodeText(node));
-            codeBlockNode.NodeFont = new Font(Control.SolutionTree.Font, FontStyle.Regular);
-            codeBlockNode.ImageKey = GetImageKeyForNode(node);
-            codeBlockNode.SelectedImageKey = codeBlockNode.ImageKey;
-            codeBlockNode.Tag = node.Instruction;
-
-            if (node.ChildNodes == null)
+            var documentNodes = components.Where(node => node.ImageKey == "OfficeDocument")
+                                          .OrderBy(node => node.Text)
+                                          .ToArray();
+            if (project.VBComponents.Cast<VBComponent>()
+                       .Any(component => component.Type == vbext_ComponentType.vbext_ct_Document))
             {
-                return codeBlockNode;
+                AddFolderNode(root, "Documents", "ClosedFolder", documentNodes);
             }
 
-            foreach (var member in node.ChildNodes)
+            var formsNodes = components.Where(node => node.ImageKey == "Form")
+                                       .OrderBy(node => node.Text)
+                                       .ToArray();
+            if (project.VBComponents.Cast<VBComponent>()
+                       .Any(component => component.Type == vbext_ComponentType.vbext_ct_MSForm))
             {
-                if (string.IsNullOrEmpty(member.Instruction.Value.Trim()))
-                {
-                    // don't make a tree node for comments
-                    continue;
-                }
-
-                var memberNode = new TreeNode(GetNodeText(member));
-                
-                memberNode.ToolTipText = string.Format("{0} (line {1})", 
-                                                member.GetType().Name,
-                                                member.Instruction.Line.StartLineNumber);
-
-                memberNode.NodeFont = new Font(Control.SolutionTree.Font, FontStyle.Regular);
-                memberNode.ImageKey = GetImageKeyForNode(member);
-                memberNode.SelectedImageKey = memberNode.ImageKey;
-                memberNode.Tag = member.Instruction;
-
-                if (member.ChildNodes != null)
-                {
-                    foreach (var child in member.ChildNodes)
-                    {
-                        memberNode.Nodes.Add(AddCodeBlockNode(child));
-                    }
-                }
-
-                codeBlockNode.Nodes.Add(memberNode);
+                AddFolderNode(root, "Forms", "ClosedFolder", formsNodes);
             }
 
-            return codeBlockNode;
+            var stdModulesNodes = components.Where(node => node.ImageKey == "StandardModule")
+                                            .OrderBy(node => node.Text)
+                                            .ToArray();
+            if (project.VBComponents.Cast<VBComponent>()
+                       .Any(component => component.Type == vbext_ComponentType.vbext_ct_StdModule))
+            {
+                AddFolderNode(root, "Standard Modules", "ClosedFolder", stdModulesNodes);
+            }
+
+            var classModulesNodes = components.Where(node => node.ImageKey == "ClassModule")
+                                              .OrderBy(node => node.Text)
+                                              .ToArray();
+            if (project.VBComponents.Cast<VBComponent>()
+                       .Any(component => component.Type == vbext_ComponentType.vbext_ct_ClassModule
+                                      || component.Type == vbext_ComponentType.vbext_ct_ActiveXDesigner))
+            {
+                AddFolderNode(root, "Class Modules", "ClosedFolder", classModulesNodes);
+            }
         }
 
-        private void TreeViewAfterExpandNode(object sender, TreeViewEventArgs e)
+        private void AddFolderNode(TreeNode root, string text, string imageKey, TreeNode[] nodes)
         {
-            if (!e.Node.ImageKey.Contains("Folder"))
+            if (_showFolders)
             {
-                return;
+                var node = root.Nodes.Add(text);
+                node.ImageKey = imageKey;
+                node.SelectedImageKey = imageKey;
+                node.Nodes.AddRange(nodes);
+                node.Expand();
             }
-
-            e.Node.ImageKey = "OpenFolder";
-            e.Node.SelectedImageKey = e.Node.ImageKey;
+            else
+            {
+                root.Nodes.AddRange(nodes);
+            }
         }
 
-        private void TreeViewAfterCollapseNode(object sender, TreeViewEventArgs e)
+        private async Task<IEnumerable<TreeNode>> CreateModuleNodesAsync(VBProject project, Font font)
         {
-            if (!e.Node.ImageKey.Contains("Folder"))
+            var result = new List<TreeNode>();
+            foreach (VBComponent vbComponent in project.VBComponents)
             {
-                return;
+                var component = vbComponent;
+                var qualifiedName = component.QualifiedName();
+
+                var members = await Task.Run(() => ParseModule(component, ref qualifiedName));
+
+                var node = members.Context;
+                node.ImageKey = ComponentTypeIcons[component.Type];
+                node.SelectedImageKey = node.ImageKey;
+                //node.NodeFont = new Font(font, FontStyle.Regular);
+                //node.Text = component.Name;
+
+                result.Add(node);
             }
 
-            e.Node.ImageKey = "ClosedFolder";
-            e.Node.SelectedImageKey = e.Node.ImageKey;
+            return result;
         }
 
-        private string GetImageKeyForNode(SyntaxTreeNode node)
+        private QualifiedContext<TreeNode> ParseModule(VBComponent component, ref QualifiedModuleName qualifiedName)
         {
-            if (node is ModuleNode)
-            {
-                return (node as ModuleNode).IsClassModule
-                    ? (node.ChildNodes != null 
-                        && node.ChildNodes.OfType<ProcedureNode>().Any()
-                        && node.ChildNodes.OfType<ProcedureNode>().All(childNode => childNode.ChildNodes != null && !childNode.ChildNodes.Any()))
-                        ? "PublicInterface"
-                        : "ClassModule"
-                    : "StandardModule";
-            }
-
-            if (node is OptionNode)
-            {
-                return "Option";
-            }
-
-            if (node is ProcedureNode)
-            {
-                var propertyTypes = new[] {ProcedureKind.PropertyGet, ProcedureKind.PropertyLet, ProcedureKind.PropertySet};
-                var procNode = (node as ProcedureNode);
-                if (procNode.Accessibility == ReservedKeywords.Public)
-                {
-                    return propertyTypes.Any(pt => pt == procNode.Kind) ? "PublicProperty" : "PublicMethod";
-                }
-                if (procNode.Accessibility == ReservedKeywords.Friend)
-                {
-                    return propertyTypes.Any(pt => pt == procNode.Kind) ? "FriendProperty" : "FriendMethod";
-                }
-                if (procNode.Accessibility == ReservedKeywords.Private)
-                {
-                    return propertyTypes.Any(pt => pt == procNode.Kind) ? "PrivateProperty" : "PrivateMethod";
-                }
-            }
-
-            if (node is UserDefinedTypeNode)
-            {
-                var typeNode = (node as UserDefinedTypeNode);
-                if (typeNode.Accessibility == ReservedKeywords.Public)
-                {
-                    return "PublicType";
-                }
-                if (typeNode.Accessibility == ReservedKeywords.Friend)
-                {
-                    return "FriendType";
-                }
-                if (typeNode.Accessibility == ReservedKeywords.Private)
-                {
-                    return "PrivateType";
-                }
-            }
-
-            if (node is EnumNode)
-            {
-                var typeNode = (node as EnumNode);
-                if (typeNode.Accessibility == ReservedKeywords.Public)
-                {
-                    return "PublicEnum";
-                }
-                if (typeNode.Accessibility == ReservedKeywords.Friend)
-                {
-                    return "FriendEnum";
-                }
-                if (typeNode.Accessibility == ReservedKeywords.Private)
-                {
-                    return "PrivateEnum";
-                }
-            }
-
-            if (node is ConstDeclarationNode)
-            {
-                var accessbility = (node as DeclarationNode).Accessibility;
-                if (accessbility == ReservedKeywords.Private)
-                {
-                    return "PrivateConst";
-                }
-                if (accessbility == ReservedKeywords.Friend)
-                {
-                    return "FriendConst";
-                }
-
-                return "PublicConst";
-            }
-
-            if (node is VariableDeclarationNode)
-            {
-                var accessbility = (node as DeclarationNode).Accessibility;
-                if (accessbility == ReservedKeywords.Private)
-                {
-                    return "PrivateField";
-                }
-                if (accessbility == ReservedKeywords.Friend)
-                {
-                    return "FriendField";
-                }
-
-                return "PublicField";
-            }
-
-            if (node is CodeBlockNode)
-            {
-                return "CodeBlock";
-            }
-
-            if (node is IdentifierNode)
-            {
-                return "Identifier";
-            }
-
-            if (node is ParameterNode)
-            {
-                return "Parameter";
-            }
-
-            if (node is AssignmentNode)
-            {
-                return "Assignment";
-            }
-
-            if (node is UserDefinedTypeMemberNode)
-            {
-                return "PublicField";
-            }
-
-            if (node is EnumMemberNode)
-            {
-                return "EnumItem";
-            }
-
-            if (node is LabelNode)
-            {
-                return "Label";
-            }
-
-            return "Operation";
-        }
-
-        private string GetNodeText(SyntaxTreeNode node)
-        {
-            if (node is ProcedureNode)
-            {
-                var procNode = node as ProcedureNode;
-                var propertyTypes = new[] { ProcedureKind.PropertyGet, ProcedureKind.PropertyLet, ProcedureKind.PropertySet };
-                if (propertyTypes.Any(pt => pt == procNode.Kind))
-                {
-                    var kind = procNode.Kind == ProcedureKind.PropertyGet
-                        ? ReservedKeywords.Get
-                        : procNode.Kind == ProcedureKind.PropertyLet
-                            ? ReservedKeywords.Let
-                            : ReservedKeywords.Set;
-
-                    return string.Format("{0} ({1})", procNode.Identifier.Name, kind);
-                }
-                return procNode.Identifier.Name;
-            }
-
-            if (node is UserDefinedTypeNode)
-            {
-                return ((UserDefinedTypeNode) node).Identifier.Name;
-            }
-
-            if (node is EnumNode)
-            {
-                return ((EnumNode) node).Identifier.Name;
-            }
-
-            if (node is IdentifierNode)
-            {
-                return ((IdentifierNode) node).Name;
-            }
-
-            return node.Instruction.Value.Trim();
+            return _parser.Parse(component).ParseTree.GetContexts<TreeViewListener, TreeNode>(new TreeViewListener(qualifiedName, Control.DisplayStyle)).Single();
         }
     }
 }

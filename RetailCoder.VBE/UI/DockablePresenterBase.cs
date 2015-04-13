@@ -5,11 +5,10 @@ using Microsoft.Vbe.Interop;
 
 namespace Rubberduck.UI
 {
-    [ComVisible(false)]
     public abstract class DockablePresenterBase : IDisposable
     {
         private readonly AddIn _addin;
-        private readonly Window _window;
+        private Window _window;
         protected readonly UserControl UserControl;
 
         protected DockablePresenterBase(VBE vbe, AddIn addin, IDockableUserControl control)
@@ -25,16 +24,17 @@ namespace Rubberduck.UI
 
         private Window CreateToolWindow(IDockableUserControl control)
         {
-            object userControlObject = null;
-            var toolWindow = _vbe.Windows.CreateToolWindow(_addin, DockableWindowHost.RegisteredProgId, control.Caption, control.ClassId, ref userControlObject);
-            
-            var userControlHost = (DockableWindowHost)userControlObject;
-            toolWindow.Visible = true; //window resizing doesn't work without this
+                object userControlObject = null;
+                var toolWindow = _vbe.Windows.CreateToolWindow(_addin, _DockableWindowHost.RegisteredProgId, control.Caption, control.ClassId, ref userControlObject);
+                var userControlHost = (_DockableWindowHost)userControlObject;
+                toolWindow.Visible = true; //window resizing doesn't work without this
 
-            EnsureMinimumWindowSize(toolWindow);
+                EnsureMinimumWindowSize(toolWindow);
 
-            userControlHost.AddUserControl(control as UserControl);
-            return toolWindow;
+                toolWindow.Visible = false; //hide it again
+
+                userControlHost.AddUserControl(control as UserControl);
+                return toolWindow;
         }
 
         private void EnsureMinimumWindowSize(Window window)
@@ -66,9 +66,21 @@ namespace Rubberduck.UI
             _window.Close();
         }
 
-        public virtual void Dispose()
+        public void Dispose()
         {
-            UserControl.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (UserControl != null)
+                {
+                    UserControl.Dispose();
+                }
+            }
         }
     }
 }

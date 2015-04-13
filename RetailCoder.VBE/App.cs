@@ -7,10 +7,10 @@ using Rubberduck.UI;
 using Rubberduck.Config;
 using Rubberduck.UI.CodeInspections;
 using Rubberduck.VBA;
+using Rubberduck.VBA.Grammar;
 
 namespace Rubberduck
 {
-    [ComVisible(false)]
     public class App : IDisposable
     {
         private readonly RubberduckMenu _menu;
@@ -21,18 +21,15 @@ namespace Rubberduck
         public App(VBE vbe, AddIn addIn)
         {
             _configService = new ConfigurationLoader();
-
-            var grammar = _configService.GetImplementedSyntax();
-
             _inspections = _configService.GetImplementedCodeInspections();
 
             var config = _configService.LoadConfiguration();
             EnableCodeInspections(config);
+            var parser = new RubberduckParser();
 
-            var parser = new Parser(grammar);
-
-            _menu = new RubberduckMenu(vbe, addIn, _configService, parser, _inspections);
-            _codeInspectionsToolbar = new CodeInspectionsToolbar(vbe, parser, _inspections);
+            var inspector = new Inspector(parser, _inspections);
+            _menu = new RubberduckMenu(vbe, addIn, _configService, parser, inspector);
+            _codeInspectionsToolbar = new CodeInspectionsToolbar(vbe, inspector);
         }
 
         private void EnableCodeInspections(Configuration config)
@@ -51,7 +48,16 @@ namespace Rubberduck
 
         public void Dispose()
         {
-            _menu.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing && _menu != null)
+            {
+                _menu.Dispose();
+            }
         }
 
         public void CreateExtUi()

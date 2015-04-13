@@ -2,15 +2,31 @@
 using System.Runtime.InteropServices;
 using Microsoft.Vbe.Interop;
 using Rubberduck.Reflection;
+using Rubberduck.Extensions;
 
 namespace Rubberduck.UnitTesting
 {
-    [ComVisible(false)]
     public static class NewUnitTestModuleCommand
     {
         private static readonly string TestModuleEmptyTemplate = string.Concat(
-            "'@TestModule\n",
-            "Private Assert As New Rubberduck.AssertClass\n\n"
+                 "'@TestModule\n"
+                ,"Private Assert As New Rubberduck.AssertClass\n\n"
+                ,"'@ModuleInitialize\n"
+                ,"Public Sub ModuleInitialize()\n"
+                ,"    'this method runs once per module.\n"
+                ,"End Sub\n\n"
+                , "'@ModuleCleanup\n"
+                , "Public Sub ModuleCleanup()\n"
+                , "    'this method runs once per module.\n"
+                , "End Sub\n\n"
+                , "'@TestInitialize\n"
+                , "Public Sub TestInitialize()\n"
+                , "    'this method runs before every test in the module.\n"
+                , "End Sub\n\n"
+                , "'@TestCleanup\n"
+                , "Public Sub TestCleanup()\n"
+                , "    'this method runs afer every test in the module.\n"
+                , "End Sub\n\n"
             );
 
         private static readonly string TestModuleBaseName = "TestModule";

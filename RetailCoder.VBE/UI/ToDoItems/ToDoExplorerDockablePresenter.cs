@@ -1,65 +1,132 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using Microsoft.Vbe.Interop;
+﻿using Microsoft.Vbe.Interop;
 using Rubberduck.Config;
 using Rubberduck.Extensions;
 using Rubberduck.ToDoItems;
 using Rubberduck.VBA;
+using Rubberduck.VBA.Nodes;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Rubberduck.UI.ToDoItems
 {
-    /// <summary>   (Not COM visible) Presenter for the Todo Explorer.  </summary>
-    [ComVisible(false)]
+    /// <summary>
+    /// Presenter for the to-do items explorer.
+    /// </summary>
     public class ToDoExplorerDockablePresenter : DockablePresenterBase
     {
-        private readonly Parser _parser;
+        private readonly IRubberduckParser _parser;
         private readonly IEnumerable<ToDoMarker> _markers;
-        private ToDoExplorerWindow Control { get { return UserControl as ToDoExplorerWindow; } }
+        private IToDoExplorerWindow Control { get { return UserControl as IToDoExplorerWindow; } }
 
-        public ToDoExplorerDockablePresenter(Parser parser, IEnumerable<ToDoMarker> markers, VBE vbe, AddIn addin) 
-            : base(vbe, addin, new ToDoExplorerWindow())
+        public ToDoExplorerDockablePresenter(IRubberduckParser parser, IEnumerable<ToDoMarker> markers, VBE vbe, AddIn addin, IToDoExplorerWindow window) 
+            : base(vbe, addin, window)
         {
             _parser = parser;
             _markers = markers;
             Control.NavigateToDoItem += NavigateToDoItem;
             Control.RefreshToDoItems += RefreshToDoList;
+            Control.SortColumn += SortColumn;
+        }
 
-            RefreshToDoList(this, EventArgs.Empty);
+        public override void Show()
+        {
+            Refresh();
+            base.Show();
+        }
+
+        public async void Refresh()
+        {
+            try
+            {
+                Cursor.Current = Cursors.WaitCursor;
+                Control.TodoItems = await GetItems();
+            }
+            finally
+            {
+                Cursor.Current = Cursors.Default;
+            }
         }
 
         private void RefreshToDoList(object sender, EventArgs e)
         {
-            var items = new List<ToDoItem>();
-            foreach (var project in VBE.VBProjects.Cast<VBProject>())
-            {
-                var tree = _parser.Parse(project);
-                items.AddRange(tree.FindAllComments().SelectMany(GetToDoMarkers));
-            }
-
-            Control.SetItems(items);
+            Refresh();
         }
 
-        private IEnumerable<ToDoItem> GetToDoMarkers(Instruction instruction)
+        private void SortColumn(object sender, DataGridViewCellMouseEventArgs e)
         {
-            return _markers.Where(marker => instruction.Comment.ToLowerInvariant()
+            var columnName = Control.GridView.Columns[e.ColumnIndex].Name;
+            IOrderedEnumerable<ToDoItem> resortedItems = null;
+
+
+            if (columnName == Control.SortedByColumn && Control.SortedAscending)
+            {
+                resortedItems = Control.TodoItems.OrderByDescending(x => x.GetType().GetProperty(columnName).GetValue(x));
+                Control.SortedAscending = false;
+            }
+            else
+            {
+                resortedItems = Control.TodoItems.OrderBy(x => x.GetType().GetProperty(columnName).GetValue(x));
+                Control.SortedByColumn = columnName;
+                Control.SortedAscending = true;
+            }
+
+            Control.TodoItems = resortedItems;
+        }
+
+        private async Task<IOrderedEnumerable<ToDoItem>> GetItems()
+        {
+            await Task.Yield();
+            var items = new ConcurrentBag<ToDoItem>();
+            var projects = VBE.VBProjects.Cast<VBProject>().Where(project => project.Protection != vbext_ProjectProtection.vbext_pp_locked);
+            Parallel.ForEach(projects,
+                project =>
+                {
+                    var modules = _parser.Parse(project);
+                    foreach (var module in modules)
+                    {
+                        var markers = module.Comments.AsParallel().SelectMany(GetToDoMarkers);
+                        foreach (var marker in markers)
+                        {
+                            items.Add(marker);
+                        }
+                    }
+                });
+
+            var sortedItems = items.OrderBy(item => item.ProjectName)
+                                    .ThenBy(item => item.ModuleName)
+                                    .ThenByDescending(item => item.Priority)
+                                    .ThenBy(item => item.LineNumber);
+
+            return sortedItems;
+        }
+
+        private IEnumerable<ToDoItem> GetToDoMarkers(CommentNode comment)
+        {
+            return _markers.Where(marker => comment.Comment.ToLowerInvariant()
                                                    .Contains(marker.Text.ToLowerInvariant()))
-                           .Select(marker => new ToDoItem((TaskPriority)marker.Priority, instruction));
+                           .Select(marker => new ToDoItem((TaskPriority)marker.Priority, comment));
         }
 
         private void NavigateToDoItem(object sender, ToDoItemClickEventArgs e)
         {
-            var project = VBE.VBProjects.Cast<VBProject>()
-                .FirstOrDefault(p => p.Name == e.Selection.ProjectName);
+            var projects = VBE.VBProjects.Cast<VBProject>()
+                .Where(p => p.Protection != vbext_ProjectProtection.vbext_pp_locked
+                            && p.Name == e.SelectedItem.ProjectName
+                            && p.VBComponents.Cast<VBComponent>()
+                                .Any(c => c.Name == e.SelectedItem.ModuleName)
+                                );
 
-            if (project == null)
+            if (projects == null)
             {
                 return;
             }
 
-            var component = project.VBComponents.Cast<VBComponent>()
-                .FirstOrDefault(c => c.Name == e.Selection.ModuleName);
+            var component = projects.FirstOrDefault().VBComponents.Cast<VBComponent>()
+                                    .First(c => c.Name == e.SelectedItem.ModuleName);
 
             if (component == null)
             {
@@ -67,9 +134,7 @@ namespace Rubberduck.UI.ToDoItems
             }
 
             var codePane = component.CodeModule.CodePane;
-
-            codePane.SetSelection(e.Selection.LineNumber);
-            codePane.ForceFocus();
+            codePane.SetSelection(e.SelectedItem.GetSelection().Selection);
         }
     }
 }

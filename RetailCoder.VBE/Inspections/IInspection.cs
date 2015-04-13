@@ -1,14 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Antlr4.Runtime;
+using Microsoft.Vbe.Interop;
 using Rubberduck.VBA;
+using Rubberduck.VBA.Nodes;
 
 namespace Rubberduck.Inspections
 {
     /// <summary>
-    /// An interface that abstracts a code inspection.
+    /// An interface that abstracts the data structure for a code inspection
     /// </summary>
-    [ComVisible(false)]
-    public interface IInspection
+    public interface IInspectionModel
     {
         /// <summary>
         /// Gets a short description for the code inspection.
@@ -24,12 +26,17 @@ namespace Rubberduck.Inspections
         /// Gets a value indicating the severity level of the code inspection.
         /// </summary>
         CodeInspectionSeverity Severity { get; set; }
+    }
 
+    /// <summary>
+    /// An interface that abstracts a runnable code inspection.
+    /// </summary>
+    public interface IInspection : IInspectionModel
+    {
         /// <summary>
-        /// Runs code inspection on specified tree node (and child nodes).
+        /// Runs code inspection on specified parse trees.
         /// </summary>
-        /// <param name="node">The <see cref="SyntaxTreeNode"/> to analyze.</param>
         /// <returns>Returns inspection results, if any.</returns>
-        IEnumerable<CodeInspectionResultBase> GetInspectionResults(SyntaxTreeNode node);
+        IEnumerable<CodeInspectionResultBase> GetInspectionResults(VBProjectParseResult parseResult);
     }
 }

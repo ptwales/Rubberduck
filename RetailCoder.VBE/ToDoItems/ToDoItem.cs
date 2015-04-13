@@ -1,10 +1,14 @@
 ﻿using System.Runtime.InteropServices;
-using Rubberduck.VBA;
+using Rubberduck.Extensions;
+using Rubberduck.VBA.Nodes;
 
 namespace Rubberduck.ToDoItems
 {
-    [ComVisible(false)]
-    public struct ToDoItem
+    /// <summary>
+    /// Represents a Todo comment and the necessary information to display and navigate to that comment.
+    /// This is a binding item. Changing it's properties changes how it is displayed.
+    /// </summary>
+    public class ToDoItem
     {
         private readonly TaskPriority _priority;
         public TaskPriority Priority{ get { return _priority; } }
@@ -21,18 +25,22 @@ namespace Rubberduck.ToDoItems
         private readonly int _lineNumber;
         public int LineNumber { get { return _lineNumber; } }
 
-        public ToDoItem(TaskPriority priority, string description, string projectName, string moduleName,  int lineNumber)
+        private readonly QualifiedSelection _selection;
+        public QualifiedSelection GetSelection() { return _selection; }
+
+        public ToDoItem(TaskPriority priority, CommentNode comment)
+            : this(priority, comment.CommentText, comment.QualifiedSelection)
+        {
+        }
+
+        public ToDoItem(TaskPriority priority, string description, QualifiedSelection qualifiedSelection)
         {
             _priority = priority;
             _description = description;
-            _projectName = projectName;
-            _moduleName = moduleName;
-            _lineNumber = lineNumber;
-        }
-
-        public ToDoItem(TaskPriority priority, Instruction instruction)
-            : this(priority, instruction.Comment, instruction.Line.ProjectName, instruction.Line.ComponentName, instruction.Line.StartLineNumber)
-        {
+            _selection = qualifiedSelection;
+            _projectName = qualifiedSelection.QualifiedName.ProjectName;
+            _moduleName = qualifiedSelection.QualifiedName.ModuleName;
+            _lineNumber = qualifiedSelection.Selection.StartLine;
         }
     }
 }

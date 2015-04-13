@@ -1,10 +1,9 @@
 ﻿using System.Xml.Serialization;
 using System.Runtime.InteropServices;
-using Rubberduck.VBA;
+using Rubberduck.VBA.Grammar;
 
 namespace Rubberduck.Config
 {
-    [ComVisible(false)]
     public enum TodoPriority
     {
         Low, 
@@ -12,14 +11,12 @@ namespace Rubberduck.Config
         High
     }
 
-    [ComVisible(false)]
     public interface IToDoMarker
     {
         TodoPriority Priority { get; set; }
         string Text { get; set; }
     }
 
-    [ComVisible(false)]
     [XmlTypeAttribute(AnonymousType = true)]
     public class ToDoMarker : IToDoMarker
     {
