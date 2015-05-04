@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Drawing;
-using System.Windows.Forms;
-using System.Runtime.InteropServices;
 using System.ComponentModel;
+using System.Drawing;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 namespace Rubberduck.UI
 {
@@ -12,11 +12,10 @@ namespace Rubberduck.UI
     [EditorBrowsable(EditorBrowsableState.Never)]
     //Underscores make classes invisible to VB6 object explorer
     //Nothing breaks because we declare a ProgId
+    // ReSharper disable once InconsistentNaming
     public partial class _DockableWindowHost : UserControl
     {
         private const string ClassId = "9CF1392A-2DC9-48A6-AC0B-E601A9802608";
-        public static string RegisteredClassId { get { return ClassId; } }
-
         private const string ProgId = "Rubberduck.UI.DockableWindowHost";
         public static string RegisteredProgId { get { return ProgId; } }
 

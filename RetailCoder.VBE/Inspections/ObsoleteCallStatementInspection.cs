@@ -1,10 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using Antlr4.Runtime;
-using Rubberduck.VBA;
-using Rubberduck.VBA.Grammar;
-using Rubberduck.VBA.Nodes;
-using Rubberduck.VBA.ParseTreeListeners;
+using Rubberduck.Parsing;
+using Rubberduck.Parsing.Grammar;
 
 namespace Rubberduck.Inspections
 {
@@ -12,7 +9,7 @@ namespace Rubberduck.Inspections
     {
         public ObsoleteCallStatementInspection()
         {
-            Severity = CodeInspectionSeverity.Warning;
+            Severity = CodeInspectionSeverity.Suggestion;
         }
 
         public string Name { get { return InspectionNames.ObsoleteCall; } }
@@ -21,21 +18,13 @@ namespace Rubberduck.Inspections
 
         public IEnumerable<CodeInspectionResultBase> GetInspectionResults(VBProjectParseResult parseResult)
         {
-            foreach (var result in parseResult.ComponentParseResults)
-            {
-                var statements = (result.ParseTree.GetContexts<ObsoleteInstrutionsListener, ParserRuleContext>(new ObsoleteInstrutionsListener(result.QualifiedName)))
-                                        .Select(context => context.Context).ToList();
-                var module = result;
-                foreach (var inspectionResult in 
-                    statements.OfType<VBParser.ECS_MemberProcedureCallContext>()
-                              .Where(call => call.CALL() != null && !string.IsNullOrEmpty(call.CALL().GetText())).Select(node => node.Parent).Union(statements.OfType<VBParser.ECS_ProcedureCallContext>().Where(call => call.CALL() != null && !string.IsNullOrEmpty(call.CALL().GetText()))
-                              .Select(node => node.Parent))
-                              .Cast<VBParser.ExplicitCallStmtContext>()
-                              .Select(context => 
-                                  new ObsoleteCallStatementUsageInspectionResult(Name, Severity, 
-                                      new QualifiedContext<VBParser.ExplicitCallStmtContext>(module.QualifiedName, context))))
-                    yield return inspectionResult;
-            }
+            // bug: will miss procedures not defined in project
+            var issues = parseResult.Declarations.Items.SelectMany(declaration => 
+                declaration.References.Where(reference => reference.HasExplicitCallStatement()))
+                .Select(issue => new ObsoleteCallStatementUsageInspectionResult(Name, Severity,
+                    new QualifiedContext<VBAParser.ExplicitCallStmtContext>(issue.QualifiedModuleName, issue.Context.Parent as VBAParser.ExplicitCallStmtContext)));
+
+            return issues;
         }
     }
 }

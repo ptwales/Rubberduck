@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Vbe.Interop;
 using Rubberduck.Extensions;
+using Rubberduck.Parsing.Grammar;
+using Rubberduck.Parsing.Nodes;
 using Rubberduck.VBA;
-using Rubberduck.VBA.Grammar;
-using Rubberduck.VBA.Nodes;
 
 namespace Rubberduck.Inspections
 {
@@ -28,7 +28,7 @@ namespace Rubberduck.Inspections
 
         private void ReplaceWithSingleQuote(VBE vbe)
         {
-            var module = vbe.FindCodeModules(QualifiedName).FirstOrDefault();
+            var module = vbe.FindCodeModule(QualifiedName);
             if (module == null)
             {
                 return;
@@ -60,7 +60,7 @@ namespace Rubberduck.Inspections
 
         private void RemoveComment(VBE vbe)
         {
-            var module = vbe.FindCodeModules(QualifiedName).FirstOrDefault();
+            var module = vbe.FindCodeModule(QualifiedName);
             if (module == null)
             {
                 return;
