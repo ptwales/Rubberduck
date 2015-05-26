@@ -7,31 +7,17 @@ namespace Rubberduck.Extensions
 {
     public static class VbeExtensions
     {
-        public static CodeModule FindCodeModule(this VBE vbe, QualifiedModuleName qualifiedName)
-        {
-            var vbComponent = vbe.VBProjects.Cast<VBProject>()
-                .Where(project => project.Protection != vbext_ProjectProtection.vbext_pp_locked
-                                  && project.Equals(qualifiedName.Project))
-                .SelectMany(project => project.VBComponents.Cast<VBComponent>())
-                .SingleOrDefault(component => component.Equals(qualifiedName.Component));
-
-            return vbComponent == null
-                ? null
-                : vbComponent.CodeModule;
-        }
-
         public static void SetSelection(this VBE vbe, QualifiedSelection selection)
         {
-            //not a very robust method. Breaks if there are multiple projects with the same name.
             var project = vbe.VBProjects.Cast<VBProject>()
-                            .FirstOrDefault(p => p.Protection != vbext_ProjectProtection.vbext_pp_locked 
-                                && p.Equals(selection.QualifiedName.Project));
+                             .FirstOrDefault(p => p.Protection != vbext_ProjectProtection.vbext_pp_locked 
+                                               && p.Equals(selection.QualifiedName.Project));
 
             VBComponent component = null;
             if (project != null)
             {
                 component = project.VBComponents.Cast<VBComponent>()
-                                .FirstOrDefault(c => c.Equals(selection.QualifiedName.Component));
+                                   .FirstOrDefault(c => c.Equals(selection.QualifiedName.Component));
             }
 
             if (component == null)
@@ -44,7 +30,7 @@ namespace Rubberduck.Extensions
 
         public static CodeModuleSelection FindInstruction(this VBE vbe, QualifiedModuleName qualifiedModuleName, Selection selection)
         {
-            var module = FindCodeModule(vbe, qualifiedModuleName);
+            var module = qualifiedModuleName.Component.CodeModule;
             if (module == null)
             {
                 return null;
